@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  regression:
+    name: 回归测试（Node ${{ matrix.node }}）
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 前端逻辑回归：DOM 桩 + 34 步
+      - name: 前端回归
+        run: node test/harness.js
+
+      # v1 → v2 数据迁移：18 项断言
+      - name: 迁移测试
+        run: node test/migrate_test.js
+
+      # 离线保证：不允许出现明文 HTTP 或外链脚本
+      - name: 离线保证检查
+        run: |
+          set -e
+          if grep -n "http://" app/index.html; then
+            echo "::error::app/index.html 出现明文 http:// 地址"
+            exit 1
+          fi
+          if grep -n '<script src="http' app/index.html; then
+            echo "::error::app/index.html 引用了外链脚本"
+            exit 1
+          fi
+          if grep -n "XMLHttpRequest\|WebSocket\|navigator.sendBeacon" app/index.html; then
+            echo "::error::出现计划外的网络 API"
+            exit 1
+          fi
+          count=$(grep -c "fetch(" app/index.html || true)
+          if [ "$count" -gt 1 ]; then
+            echo "::error::fetch() 出现 $count 次，预期只有 checkScoreDataUpdate 一处"
+            exit 1
+          fi
+          echo "离线保证检查通过"
