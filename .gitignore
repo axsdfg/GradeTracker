@@ -1,0 +1,32 @@
+# ---- 构建产物 / 临时文件 ----
+dist/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# ---- 第三方依赖（用 scripts/fetch-vendor.js 获取）----
+app/echarts.min.js
+node_modules/
+
+# ---- 密钥与签名材料：绝对不要提交 ----
+*.jks
+*.keystore
+*.p12
+*.pepk
+keystore/
+
+# ---- Android 构建产物 ----
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+apksig.jar
+build/
+.gradle/
+
+# ---- 编辑器 ----
+.idea/
+.vscode/
+*.iml

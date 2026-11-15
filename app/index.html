@@ -1,0 +1,3086 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e3a5f">
+<title>成绩追踪</title>
+<script src="echarts.min.js"></script>
+<style>
+/* ===================== 主题变量 ===================== */
+:root{
+  --bg:#f4f6f9; --card:#ffffff; --card-2:#fafbfc;
+  --brand:#1e3a5f; --brand-2:#2c5282; --brand-ink:#ffffff;
+  --accent:#d97706; --accent-soft:#fef3c7;
+  --ok:#059669; --ok-soft:#ecfdf5;
+  --warn:#b45309; --warn-soft:#fff7ed;
+  --danger:#dc2626; --danger-soft:#fef2f2;
+  --info:#2563eb; --info-soft:#eff6ff;
+  --ink:#151c27; --ink-2:#4a5568; --muted:#93a0b1;
+  --line:#e4e9f0; --line-2:#eef2f7;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 14px rgba(16,24,40,.05);
+  --radius:14px; --radius-sm:10px;
+}
+html[data-theme="dark"]{
+  --bg:#101419; --card:#181f28; --card-2:#1e2631;
+  --brand:#8fb6e8; --brand-2:#a9c8ee; --brand-ink:#0f1620;
+  --accent:#f0a94a; --accent-soft:#3a2a12;
+  --ok:#4ade80; --ok-soft:#132a1e;
+  --warn:#fbbf24; --warn-soft:#33260e;
+  --danger:#f87171; --danger-soft:#331616;
+  --info:#7aa9f7; --info-soft:#131f33;
+  --ink:#e9eef6; --ink-2:#b6c1d0; --muted:#7c8899;
+  --line:#28313d; --line-2:#212a35;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;transition:background .25s,color .25s;
+}
+#app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;background:var(--bg)}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+::-webkit-scrollbar{width:0;height:0}
+
+/* ===================== 顶部 ===================== */
+.app-header{background:var(--brand);color:var(--brand-ink);padding:14px 18px 16px;
+  padding-top:calc(14px + env(safe-area-inset-top));position:sticky;top:0;z-index:20;
+  border-radius:0 0 18px 18px;box-shadow:0 2px 12px rgba(16,24,40,.08)}
+.app-header .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.app-header h1{font-size:18px;font-weight:650;letter-spacing:.3px}
+.app-header .sub{font-size:11.5px;opacity:.72;margin-top:1px}
+.term-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.22);color:inherit;padding:5px 10px;border-radius:20px;
+  font-size:12px;white-space:nowrap;cursor:pointer;max-width:172px}
+.term-pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.term-pill svg{flex:none;opacity:.85}
+
+/* ===================== 主体 ===================== */
+.app-main{flex:1;padding:14px 14px 96px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.view{display:none}
+.view.active{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border-radius:var(--radius);padding:15px 16px;margin-bottom:11px;
+  border:1px solid var(--line-2);box-shadow:var(--shadow)}
+.card-title{font-size:13.5px;font-weight:650;color:var(--ink-2);margin-bottom:11px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-title .t-left{display:flex;align-items:center;gap:7px}
+.card-title .dot{width:4px;height:13px;border-radius:2px;background:var(--accent);display:inline-block}
+.card-title .t-right{font-size:11.5px;font-weight:400;color:var(--muted);display:flex;align-items:center;gap:6px}
+.empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:13px;line-height:1.9}
+.empty b{display:block;color:var(--ink-2);font-size:14px;margin-bottom:4px}
+
+/* 概览网格 */
+.overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px}
+.ov{background:var(--card);border:1px solid var(--line-2);border-radius:var(--radius);padding:13px 14px;
+  box-shadow:var(--shadow);position:relative;overflow:hidden}
+.ov .label{font-size:11.5px;color:var(--muted)}
+.ov .value{font-size:23px;font-weight:750;color:var(--brand);letter-spacing:-.5px;line-height:1.25}
+.ov .value small{font-size:12px;font-weight:500;color:var(--muted);margin-left:2px}
+.ov .change{font-size:11.5px;margin-top:3px;font-weight:600}
+.up{color:var(--ok)} .down{color:var(--danger)} .flat{color:var(--muted)}
+
+/* 进度 */
+.bar{height:7px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--brand),var(--accent));transition:width .5s ease}
+.goal-row{display:flex;align-items:baseline;justify-content:space-between;font-size:12.5px;margin-bottom:6px;color:var(--ink-2)}
+.goal-row b{font-size:15px;color:var(--ink)}
+
+/* 列表 */
+.list{display:flex;flex-direction:column;gap:9px}
+.item{background:var(--card);border:1px solid var(--line-2);border-radius:var(--radius);padding:12px 14px;
+  box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .12s ease}
+.item:active{transform:scale(.985)}
+.item .date-badge{flex:none;width:46px;height:46px;border-radius:12px;background:var(--card-2);
+  border:1px solid var(--line-2);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.item .date-badge b{font-size:16px;line-height:1;color:var(--ink)}
+.item .date-badge span{font-size:10px;color:var(--muted);margin-top:2px}
+.item .body{flex:1;min-width:0}
+.item .name{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .meta{font-size:11.5px;color:var(--muted);margin-top:2px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.item .right{text-align:right;flex:none}
+.item .total{font-size:17px;font-weight:750;color:var(--brand);line-height:1.2}
+.tag{display:inline-block;font-size:10.5px;padding:1.5px 7px;border-radius:20px;font-weight:600;
+  background:var(--card-2);color:var(--ink-2);border:1px solid var(--line-2)}
+.tag.monthly{background:var(--info-soft);color:var(--info);border-color:transparent}
+.tag.midterm{background:var(--accent-soft);color:var(--warn);border-color:transparent}
+.tag.final{background:var(--danger-soft);color:var(--danger);border-color:transparent}
+.tag.mock{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+
+/* 章节 */
+.section-label{font-size:12px;font-weight:650;color:var(--muted);margin:16px 2px 8px;display:flex;align-items:center;gap:6px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--line)}
+
+/* 表单 */
+.form-group{margin-bottom:11px}
+.form-label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.form-input{width:100%;height:42px;padding:0 12px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:var(--card-2);color:var(--ink);outline:none;
+  transition:border-color .15s,box-shadow .15s;font-size:14.5px}
+.form-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(30,58,95,.1)}
+html[data-theme="dark"] .form-input:focus{box-shadow:0 0 0 3px rgba(143,182,232,.18)}
+.form-input::placeholder{color:var(--muted)}
+.form-row{display:flex;gap:9px}
+.form-row > .form-group{flex:1}
+textarea.form-input{height:auto;padding:10px 12px;resize:vertical;min-height:72px;line-height:1.6}
+.btn{height:42px;padding:0 16px;border-radius:var(--radius-sm);border:1px solid var(--line);
+  background:var(--card);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s,opacity .15s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn-accent{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-outline{background:transparent}
+.btn-danger{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--ink-2)}
+.btn-block{flex:1;width:100%}
+.btn-sm{height:34px;font-size:13px;padding:0 12px}
+.btn-row{display:flex;gap:9px}
+
+/* 分段控件 */
+.seg{display:flex;background:var(--card-2);border:1px solid var(--line-2);border-radius:11px;padding:3px;gap:2px}
+.seg button{flex:1;height:32px;border:none;background:transparent;border-radius:8px;font-size:12.5px;
+  font-weight:600;color:var(--muted);cursor:pointer;transition:.18s}
+.seg button.active{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.1)}
+html[data-theme="dark"] .seg button.active{background:#2a3442}
+
+/* 图表 */
+.chart{width:100%;height:262px}
+.chart.sm{height:206px}
+
+/* 科目行 */
+.score-header-row,.score-row{display:grid;grid-template-columns:60px 1fr 1fr 1fr 1fr;gap:6px;align-items:center}
+.score-header-row{font-size:11px;color:var(--muted);margin-bottom:6px}
+.score-row{margin-bottom:7px}
+.score-row .sname{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-row .form-input{height:38px;text-align:center;padding:0 4px;font-size:14px}
+.score-row.muted .sname{color:var(--muted);font-weight:500}
+
+/* 详情 */
+.detail-head{text-align:center;padding:6px 0 12px}
+.detail-head .big{font-size:40px;font-weight:800;color:var(--brand);line-height:1.1;letter-spacing:-1px}
+.detail-head .big small{font-size:13px;font-weight:500;color:var(--muted)}
+.detail-head .sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.kv{background:var(--card-2);border-radius:10px;padding:10px 12px}
+.kv .k{font-size:11px;color:var(--muted)}
+.kv .v{font-size:15px;font-weight:700;margin-top:1px}
+.subj-list{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.subj-line{display:flex;align-items:center;gap:9px;font-size:13px}
+.subj-line .n{width:50px;flex:none;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subj-line .b{flex:1;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+.subj-line .b i{display:block;height:100%;border-radius:4px}
+.subj-line .s{width:64px;text-align:right;flex:none;font-weight:600;font-variant-numeric:tabular-nums}
+.subj-line .s em{font-style:normal;font-size:11px;color:var(--muted);font-weight:400}
+
+/* 底部导航 */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;
+  background:var(--card);border-top:1px solid var(--line);display:flex;
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:30;box-shadow:0 -4px 16px rgba(16,24,40,.05)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;
+  color:var(--muted);text-decoration:none;cursor:pointer;font-size:10.5px;font-weight:600;border-radius:10px;transition:color .18s}
+.nav-item svg{width:21px;height:21px}
+.nav-item.active{color:var(--brand)}
+
+/* FAB */
+.fab{position:fixed;right:calc(50% - 260px + 16px);bottom:80px;width:52px;height:52px;border-radius:17px;
+  border:none;background:var(--brand);color:var(--brand-ink);box-shadow:0 8px 22px rgba(30,58,95,.3);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:25;transition:transform .12s}
+.fab:active{transform:scale(.94)}
+.fab svg{width:25px;height:25px}
+@media(max-width:560px){.fab{right:16px}}
+
+/* 弹层 */
+.modal-overlay,.dialog-overlay,.wheel-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);
+  display:none;align-items:flex-end;justify-content:center;z-index:100}
+.modal-overlay.show,.dialog-overlay.show,.wheel-overlay.show{display:flex;animation:ovIn .18s ease}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+.modal{width:100%;max-width:520px;max-height:90vh;background:var(--card);border-radius:20px 20px 0 0;
+  display:flex;flex-direction:column;animation:slideUp .26s cubic-bezier(.22,1,.36,1);overflow:hidden}
+@keyframes slideUp{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+.modal-header{padding:16px 18px 12px;border-bottom:1px solid var(--line-2);display:flex;
+  align-items:center;justify-content:space-between;flex:none}
+.modal-header h3{font-size:16px;font-weight:700}
+.modal-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--card-2);
+  color:var(--ink-2);font-size:19px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.modal-footer{padding:12px 18px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line-2);
+  display:flex;gap:9px;flex:none;background:var(--card)}
+
+/* 对话框 */
+.dialog-overlay{align-items:center;padding:24px}
+.dialog-box{background:var(--card);border-radius:16px;padding:20px 18px 14px;width:100%;max-width:330px;
+  animation:pop .2s cubic-bezier(.22,1,.36,1);box-shadow:0 20px 50px rgba(0,0,0,.2)}
+@keyframes pop{from{transform:scale(.92);opacity:.5}to{transform:none;opacity:1}}
+.dialog-message{font-size:14.5px;line-height:1.65;text-align:center;padding:4px 4px 14px;white-space:pre-line}
+.dialog-actions{display:flex;gap:9px}
+.dialog-actions .btn{flex:1}
+
+/* 滚轮日期 */
+.wheel-overlay{align-items:flex-end}
+.wheel-panel{width:100%;max-width:520px;background:var(--card);border-radius:20px 20px 0 0;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));animation:slideUp .24s cubic-bezier(.22,1,.36,1)}
+.wheel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line-2)}
+.wheel-header button{border:none;background:transparent;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer;padding:4px}
+.wheel-header .ok{color:var(--brand);font-weight:700}
+.wheel-columns{position:relative;display:flex;height:200px;padding:0 10px}
+.wheel-column{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;position:relative;z-index:2}
+.wheel-column::-webkit-scrollbar{display:none}
+.wheel-item{height:40px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  scroll-snap-align:center;color:var(--muted);transition:color .18s,font-size .18s;font-variant-numeric:tabular-nums}
+.wheel-item.on{color:var(--ink);font-weight:700;font-size:17px}
+.wheel-mask{position:absolute;left:10px;right:10px;top:80px;height:40px;border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);background:var(--card-2);border-radius:8px;z-index:1;pointer-events:none}
+.wheel-pad{height:80px;flex:none}
+
+/* Toast */
+#toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,14px);background:rgba(22,28,38,.92);
+  color:#fff;font-size:13.5px;padding:10px 18px;border-radius:22px;opacity:0;pointer-events:none;
+  transition:.24s;z-index:300;max-width:86%;text-align:center;line-height:1.5}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* 杂项 */
+.hint{font-size:11.5px;color:var(--muted);line-height:1.7}
+.divider{height:1px;background:var(--line-2);margin:12px 0}
+.badge-mini{font-size:10px;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--warn);font-weight:600}
+.parent-mode .rank-sensitive{display:none !important}
+.chip-row{display:flex;gap:7px;flex-wrap:wrap}
+.chip{padding:5px 11px;border-radius:20px;border:1px solid var(--line);background:var(--card-2);
+  font-size:12px;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.hidden-file-input{display:none}
+.loading{display:inline-block;width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--brand);
+  border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.share-preview{width:100%;border-radius:12px;border:1px solid var(--line);display:block;background:#fff}
+.countdown{display:flex;align-items:center;gap:12px}
+.countdown .num{font-size:30px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-1px}
+.countdown .num small{font-size:12px;font-weight:600;margin-left:2px}
+.countdown .txt{font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.countdown .txt b{display:block;font-size:14px;color:var(--ink)}
+.banner{background:var(--warn-soft);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--warn);
+  display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;line-height:1.6}
+.banner.info{background:var(--info-soft);color:var(--info)}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <div class="top">
+      <div style="min-width:0">
+        <h1 id="header-title">成绩追踪</h1>
+        <div class="sub" id="header-subtitle">记录每一次进步</div>
+      </div>
+      <button class="term-pill" onclick="openTermModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span id="term-label">本学期</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main" id="app-main">
+    <section class="view active" id="view-home"><div id="home-content"></div></section>
+    <section class="view" id="view-exams"><div id="exams-content"></div></section>
+    <section class="view" id="view-analysis"><div id="analysis-content"></div></section>
+    <section class="view" id="view-mistakes"><div id="mistakes-content"></div></section>
+    <section class="view" id="view-settings"><div id="settings-content"></div></section>
+  </main>
+
+  <button class="fab" onclick="openExamModal()" aria-label="添加考试">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <nav class="bottom-nav" id="bottom-nav">
+    <a class="nav-item active" data-view="home" onclick="switchView('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>概览</span>
+    </a>
+    <a class="nav-item" data-view="exams" onclick="switchView('exams')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>成绩</span>
+    </a>
+    <a class="nav-item" data-view="analysis" onclick="switchView('analysis')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 15 11 10 15 13 19 6"/></svg>
+      <span>分析</span>
+    </a>
+    <a class="nav-item" data-view="mistakes" onclick="switchView('mistakes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="15" y2="8"/></svg>
+      <span>错题</span>
+    </a>
+    <a class="nav-item" data-view="settings" onclick="switchView('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>设置</span>
+    </a>
+  </nav>
+</div>
+
+<!-- ============ 添加/编辑考试 ============ -->
+<div class="modal-overlay" id="exam-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="exam-modal-title">添加考试</h3>
+      <button class="modal-close" onclick="closeModal('exam-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">考试名称</label>
+        <input type="text" class="form-input" id="exam-name" placeholder="如：高三上第一次月考">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">考试日期</label>
+          <input type="text" class="form-input" id="exam-date-text" readonly placeholder="选择日期" onclick="openWheelPicker('exam')">
+          <input type="hidden" id="exam-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">所属学期</label>
+          <select class="form-input" id="exam-term"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">考试类型</label>
+        <div class="chip-row" id="exam-type-chips"></div>
+      </div>
+      <div class="section-label">总分与排名 <span style="font-weight:400;color:var(--muted)" class="rank-sensitive"></span></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">总分</label>
+          <input type="text" class="form-input" id="total-score-display" readonly style="background:var(--line-2)"></div>
+        <div class="form-group rank-sensitive"><label class="form-label">班级排名</label>
+          <input type="number" inputmode="numeric" class="form-input" id="total-class-rank" placeholder="—"></div>
+        <div class="form-group rank-sensitive"><label class="form-label">年级排名</label>
+          <input type="number" inputmode="numeric" class="form-input" id="total-grade-rank" placeholder="—"></div>
+      </div>
+      <div class="section-label">各科成绩</div>
+      <div class="score-header-row">
+        <span>科目</span><span style="text-align:center">分数</span><span style="text-align:center">满分</span>
+        <span style="text-align:center">班排</span><span style="text-align:center">年排</span>
+      </div>
+      <div id="subject-scores-container"></div>
+      <p class="hint" style="margin-top:8px">留空的科目视为本次未考，不计入总分。</p>
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">备注（可选）</label>
+        <input type="text" class="form-input" id="exam-note" placeholder="如：数学计算失误较多">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-block" onclick="closeModal('exam-modal')">取消</button>
+      <button class="btn btn-primary btn-block" onclick="saveExam()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 考试详情 ============ -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="detail-title">考试详情</h3>
+      <button class="modal-close" onclick="closeModal('detail-modal')">&times;</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" style="flex:0 0 auto" onclick="deleteCurrentExam()">删除</button>
+      <button class="btn btn-outline btn-block" onclick="openShareCard()">分享</button>
+      <button class="btn btn-primary btn-block" onclick="editCurrentExam()">编辑</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 成绩单分享图 ============ -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>成绩单卡片</h3>
+      <button class="modal-close" onclick="closeModal('share-modal')">&times;</button>
+    </div>
+    <div class="modal-body" id="share-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-block" onclick="closeModal('share-modal')">关闭</button>
+      <button class="btn btn-primary btn-block" onclick="saveShareImage()">保存图片</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 错题 ============ -->
+<div class="modal-overlay" id="mistake-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="mistake-modal-title">记录错题</h3>
+      <button class="modal-close" onclick="closeModal('mistake-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">科目</label><select class="form-input" id="mk-subject"></select></div>
+        <div class="form-group"><label class="form-label">关联考试（可选）</label><select class="form-input" id="mk-exam"></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">题目简述</label>
+        <input type="text" class="form-input" id="mk-title" placeholder="如：圆锥曲线第二问求离心率"></div>
+      <div class="form-group"><label class="form-label">错因</label>
+        <select class="form-input" id="mk-reason">
+          <option value="概念不清">概念不清</option>
+          <option value="计算失误">计算失误</option>
+          <option value="审题偏差">审题偏差</option>
+          <option value="方法不会">方法不会</option>
+          <option value="时间不够">时间不够</option>
+          <option value="其他">其他</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">正确思路 / 订正</label>
+        <textarea class="form-input" id="mk-answer" placeholder="关键步骤、易错点、下次怎么避免"></textarea></div>
+      <div class="form-group"><label class="form-label">标签（逗号分隔）</label>
+        <input type="text" class="form-input" id="mk-tags" placeholder="如：解析几何,压轴"></div>
+      <div class="form-group">
+        <label class="form-label">状态</label>
+        <div class="chip-row" id="mk-mastered-chips">
+          <button class="chip on" data-v="0" onclick="pickChip('mk-mastered-chips',this)">未掌握</button>
+          <button class="chip" data-v="1" onclick="pickChip('mk-mastered-chips',this)">已掌握</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-block" onclick="closeModal('mistake-modal')">取消</button>
+      <button class="btn btn-primary btn-block" onclick="saveMistake()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 一分一段 / 省控线数据 ============ -->
+<div class="modal-overlay" id="data-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>分数线数据</h3>
+      <button class="modal-close" onclick="closeModal('data-modal')">&times;</button>
+    </div>
+    <div class="modal-body" id="data-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-block" onclick="closeModal('data-modal')">关闭</button>
+      <button class="btn btn-primary btn-block" onclick="checkScoreDataUpdate(true)">立即检查更新</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 学期管理 ============ -->
+<div class="modal-overlay" id="term-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>学期管理</h3>
+      <button class="modal-close" onclick="closeModal('term-modal')">&times;</button>
+    </div>
+    <div class="modal-body" id="term-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-block" onclick="closeModal('term-modal')">关闭</button>
+      <button class="btn btn-primary btn-block" onclick="quickAddTerm()">新建学期</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 通用对话框 ============ -->
+<div class="dialog-overlay" id="dialog-overlay">
+  <div class="dialog-box">
+    <div class="dialog-message" id="dialog-message"></div>
+    <div class="dialog-actions" id="dialog-actions"></div>
+  </div>
+</div>
+
+<!-- ============ 日期滚轮 ============ -->
+<div class="wheel-overlay" id="wheel-overlay">
+  <div class="wheel-panel">
+    <div class="wheel-header">
+      <button onclick="closeWheelPicker()">取消</button>
+      <span style="font-size:15px;font-weight:650">选择日期</span>
+      <button class="ok" onclick="confirmWheelDate()">确定</button>
+    </div>
+    <div class="wheel-columns">
+      <div class="wheel-mask"></div>
+      <div class="wheel-column" id="wheel-year"></div>
+      <div class="wheel-column" id="wheel-month"></div>
+      <div class="wheel-column" id="wheel-day"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="file-import" class="hidden-file-input" accept=".json,.csv,.txt" onchange="handleFileImport(event)">
+<script>
+/* ============================================================
+   成绩追踪 v2 · 纯本地离线应用
+   数据：localStorage（单键 grade_tracker_v2）
+   网络：仅当你在设置里填写数据源地址并点击拉取时，访问该 HTTPS 地址；无统计、无上报
+   ============================================================ */
+
+const STORE_KEY = 'grade_tracker_v2';
+const LEGACY_KEY = 'grade_tracker_data';
+const BAK_KEYS = ['grade_tracker_bak_0', 'grade_tracker_bak_1', 'grade_tracker_bak_2'];
+const SCHEMA = 2;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const round1 = (n) => Math.round(n * 10) / 10;
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d)) return iso;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function daysBetween(aISO, bISO) {
+  const a = new Date(aISO + 'T00:00:00'), b = new Date(bISO + 'T00:00:00');
+  return Math.round((b - a) / 86400000);
+}
+
+/* ---------------- 默认数据 ---------------- */
+function defaultSubjects() {
+  const base = [
+    ['chinese', '语文', 150], ['math', '数学', 150], ['english', '英语', 150],
+    ['physics', '物理', 100], ['chemistry', '化学', 100], ['biology', '生物', 100],
+    ['politics', '政治', 100], ['history', '历史', 100], ['geography', '地理', 100]
+  ];
+  return base.map(([id, name, full], i) => ({
+    id, name, fullScore: full, targetScore: null, weight: 1,
+    elective: i >= 3, assign: false, assignBase: 30, assignMax: 100, hidden: false
+  }));
+}
+
+function guessTerm(d = new Date()) {
+  const y = d.getFullYear(), m = d.getMonth() + 1;
+  let y0, sem;
+  if (m >= 9) { y0 = y; sem = '上学期'; }
+  else if (m <= 1) { y0 = y - 1; sem = '上学期'; }
+  else { y0 = y - 1; sem = '下学期'; }
+  return {
+    id: 't' + y0 + (sem === '上学期' ? 'a' : 'b'),
+    name: `${y0}-${y0 + 1} 学年 · ${sem}`,
+    startDate: sem === '上学期' ? `${y0}-09-01` : `${y0 + 1}-02-01`,
+    endDate: sem === '上学期' ? `${y0 + 1}-01-31` : `${y0 + 1}-08-31`
+  };
+}
+
+function defaultState() {
+  const t = guessTerm();
+  return {
+    schemaVersion: SCHEMA,
+    subjects: defaultSubjects(),
+    exams: [],
+    terms: [t],
+    mistakes: [],
+    scoreData: null,
+    settings: {
+      activeTermId: t.id,
+      viewMode: 'student',
+      theme: 'auto',
+      scoreMode: 'raw',
+      nextExam: { name: '', date: '' },
+      remindDays: 7,
+      dataSource: { url: '', auto: true, lastCheck: 0 },
+      province: '', year: ''
+    },
+    meta: { createdAt: Date.now(), lastBackup: 0, lastSave: 0 }
+  };
+}
+
+let state = defaultState();
+
+/* ---------------- 读写 ---------------- */
+function loadState() {
+  let raw = null;
+  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { }
+  if (raw) {
+    try {
+      const s = JSON.parse(raw);
+      state = mergeState(defaultState(), s);
+      return;
+    } catch (e) { console.warn('state parse failed', e); }
+  }
+  // 迁移 v1
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const v1 = JSON.parse(legacy);
+      state = migrateV1(v1);
+      saveState(true);
+      return;
+    }
+  } catch (e) { }
+  state = defaultState();
+}
+
+function mergeState(def, s) {
+  const out = def;
+  if (Array.isArray(s.subjects) && s.subjects.length) {
+    out.subjects = s.subjects.map(sub => Object.assign(
+      { targetScore: null, weight: 1, elective: false, assign: false, assignBase: 30, assignMax: 100, hidden: false }, sub));
+  }
+  out.exams = Array.isArray(s.exams) ? s.exams : [];
+  out.terms = (Array.isArray(s.terms) && s.terms.length) ? s.terms : def.terms;
+  out.mistakes = Array.isArray(s.mistakes) ? s.mistakes : [];
+  out.scoreData = s.scoreData || null;
+  out.settings = Object.assign(def.settings, s.settings || {});
+  out.settings.dataSource = Object.assign(def.settings.dataSource, (s.settings || {}).dataSource || {});
+  out.meta = Object.assign(def.meta, s.meta || {});
+  // 兼容：老数据的考试没有 termId
+  const activeTerm = out.terms[out.terms.length - 1] || out.terms[0];
+  out.exams.forEach(e => { if (!e.termId) e.termId = activeTerm.id; });
+  if (!out.terms.find(t => t.id === out.settings.activeTermId)) out.settings.activeTermId = activeTerm.id;
+  return out;
+}
+
+function migrateV1(v1) {
+  const st = defaultState();
+  if (Array.isArray(v1.subjects)) {
+    v1.subjects.forEach((s, i) => {
+      const d = st.subjects.find(x => x.id === s.id) || st.subjects[i];
+      if (!d) return;
+      if (s.name) d.name = s.name;
+      d.fullScore = Number(s.fullScore) || d.fullScore;
+      d.targetScore = s.targetScore ? Number(s.targetScore) : null;
+    });
+  }
+  st.exams = (v1.exams || []).map(e => ({
+    id: e.id || uid(), name: e.name || '未命名考试', date: e.date || todayISO(),
+    type: e.type || 'other', termId: st.terms[0].id,
+    totalClassRank: e.totalClassRank || null, totalGradeRank: e.totalGradeRank || null,
+    note: e.note || '', scores: e.scores || {}
+  }));
+  return st;
+}
+
+function saveState(silent) {
+  state.meta.lastSave = Date.now();
+
+  // 每日快照（环形 3 份）+ 原生落盘（若桥可用）
+  const day = 86400000;
+  const needBackup = !state.meta.lastBackup || Date.now() - state.meta.lastBackup > day;
+  if (needBackup) {
+    try {
+      for (let i = BAK_KEYS.length - 1; i > 0; i--) {
+        const prev = localStorage.getItem(BAK_KEYS[i - 1]);
+        if (prev) localStorage.setItem(BAK_KEYS[i], prev);
+      }
+      localStorage.setItem(BAK_KEYS[0], JSON.stringify(state));
+      state.meta.lastBackup = Date.now();
+    } catch (e) { }
+  }
+
+  const json = JSON.stringify(state);
+  try {
+    localStorage.setItem(STORE_KEY, json);
+  } catch (e) {
+    toast('存储空间不足，保存失败');
+    console.error(e);
+    return;
+  }
+
+  if (needBackup) {
+    try {
+      if (window.AndroidBridge && AndroidBridge.writeBackup) AndroidBridge.writeBackup(json);
+    } catch (e) { }
+  }
+}
+
+/* ---------------- 计算 ---------------- */
+const subjectById = (id) => state.subjects.find(s => s.id === id) || { id, name: id, fullScore: 100, weight: 1 };
+const visibleSubjects = () => state.subjects.filter(s => !s.hidden);
+const termById = (id) => state.terms.find(t => t.id === id) || state.terms[0];
+const activeTerm = () => termById(state.settings.activeTermId);
+
+function examsInTerm(termId) {
+  return state.exams.filter(e => e.termId === termId);
+}
+function sortExams(list) {
+  return [...list].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+function scoredEntries(exam) {
+  const out = [];
+  visibleSubjects().forEach(s => {
+    const r = exam.scores && exam.scores[s.id];
+    if (r && r.score !== '' && r.score != null && !isNaN(Number(r.score))) {
+      out.push({ subject: s, score: Number(r.score), full: Number(r.fullScore) || s.fullScore, rec: r });
+    }
+  });
+  return out;
+}
+function assignedOf(subj, score, full) {
+  if (!subj.assign) return score;
+  const base = subj.assignBase || 30, max = subj.assignMax || 100;
+  return Math.round(base + (max - base) * clamp(score / full, 0, 1));
+}
+function examTotals(exam) {
+  const rows = scoredEntries(exam);
+  let raw = 0, full = 0, weighted = 0, wfull = 0, assigned = 0, afull = 0;
+  rows.forEach(r => {
+    raw += r.score; full += r.full;
+    weighted += r.score * (r.subject.weight || 1);
+    wfull += r.full * (r.subject.weight || 1);
+    assigned += assignedOf(r.subject, r.score, r.full);
+    afull += r.subject.assign ? (r.subject.assignMax || 100) : r.full;
+  });
+  return { raw, full, weighted, wfull, assigned, afull, count: rows.length };
+}
+function totalFor(exam, mode) {
+  const t = examTotals(exam);
+  if (mode === 'weighted') return { value: round1(t.weighted), full: round1(t.wfull) };
+  if (mode === 'assigned') return { value: round1(t.assigned), full: round1(t.afull) };
+  return { value: round1(t.raw), full: round1(t.full) };
+}
+function currentMode() { return state.settings.scoreMode || 'raw'; }
+function examTotalDisplay(exam) { return totalFor(exam, currentMode()); }
+
+function prevExamOf(exam, pool) {
+  const list = sortExams(pool || state.exams).filter(e => e.id !== exam.id);
+  const idx = list.findIndex(e => String(e.date) >= String(exam.date));
+  if (list.length === 0) return null;
+  if (idx === -1) return list[list.length - 1];
+  return idx > 0 ? list[idx - 1] : null;
+}
+function changeText(cur, prev, lowerIsBetter) {
+  if (cur == null || prev == null) return '';
+  const d = Number(cur) - Number(prev);
+  if (d === 0) return '<span class="flat">— 持平</span>';
+  const better = lowerIsBetter ? d < 0 : d > 0;
+  const arrow = better ? '↑' : '↓';
+  const word = lowerIsBetter ? (better ? '进步' : '退步') : (better ? '提升' : '下降');
+  return `<span class="${better ? 'up' : 'down'}">${arrow} ${word} ${Math.abs(round1(d))}</span>`;
+}
+
+/* 单科统计（用于 Z 分数） */
+function subjectStats(exams) {
+  const out = {};
+  visibleSubjects().forEach(s => {
+    const rates = [];
+    exams.forEach(e => {
+      const r = e.scores && e.scores[s.id];
+      if (r && r.score !== '' && r.score != null) {
+        const full = Number(r.fullScore) || s.fullScore;
+        rates.push(clamp(Number(r.score) / full, 0, 1.2));
+      }
+    });
+    if (rates.length >= 2) {
+      const mean = rates.reduce((a, b) => a + b, 0) / rates.length;
+      const varc = rates.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (rates.length - 1);
+      out[s.id] = { mean, std: Math.sqrt(varc) || 0.0001, n: rates.length };
+    } else if (rates.length === 1) {
+      out[s.id] = { mean: rates[0], std: 0.0001, n: 1 };
+    }
+  });
+  return out;
+}
+
+/* ---------------- UI 基础 ---------------- */
+let toastTimer = null;
+function toast(msg, ms = 2000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+function openModal(id) { $(id).classList.add('show'); }
+function closeModal(id) { $(id).classList.remove('show'); }
+function showAlert(msg, onClose) {
+  $('dialog-message').textContent = msg;
+  $('dialog-actions').innerHTML = '<button class="btn btn-primary btn-block" id="dlg-ok">知道了</button>';
+  $('dialog-overlay').classList.add('show');
+  $('dlg-ok').onclick = () => { $('dialog-overlay').classList.remove('show'); if (onClose) onClose(); };
+}
+function showConfirm(msg, onOk, danger) {
+  $('dialog-message').textContent = msg;
+  $('dialog-actions').innerHTML =
+    '<button class="btn btn-outline btn-block" id="dlg-cancel">取消</button>' +
+    `<button class="btn ${danger ? 'btn-danger' : 'btn-primary'} btn-block" id="dlg-ok">确定</button>`;
+  $('dialog-overlay').classList.add('show');
+  $('dlg-cancel').onclick = () => $('dialog-overlay').classList.remove('show');
+  $('dlg-ok').onclick = () => { $('dialog-overlay').classList.remove('show'); onOk && onOk(); };
+}
+function pickChip(groupId, btn) {
+  $(groupId).querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+}
+function chipValue(groupId) {
+  const on = $(groupId).querySelector('.chip.on');
+  return on ? on.dataset.v : '';
+}
+
+/* 主题 */
+function resolveTheme() {
+  const m = state.settings.theme || 'auto';
+  if (m === 'auto') {
+    const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return dark ? 'dark' : 'light';
+  }
+  return m;
+}
+function applyTheme() {
+  const t = resolveTheme();
+  document.documentElement.dataset.theme = t;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'dark' ? '#101419' : '#1e3a5f');
+  disposeAllCharts();
+  if (currentView === 'home') renderHome();
+  if (currentView === 'analysis') renderAnalysis();
+}
+function applyParentMode() {
+  document.body.classList.toggle('parent-mode', state.settings.viewMode === 'parent');
+}
+
+/* 视图切换 */
+let currentView = 'home';
+function switchView(view, keepScroll) {
+  currentView = view;
+  disposeAllCharts();
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = $('view-' + view);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
+  const main = $('app-main');
+  if (!keepScroll) main.scrollTop = 0;
+  if (view === 'home') renderHome();
+  if (view === 'exams') renderExams();
+  if (view === 'analysis') renderAnalysis();
+  if (view === 'mistakes') renderMistakes();
+  if (view === 'settings') renderSettings();
+}
+function renderAll() {
+  applyParentMode();
+  updateTermLabel();
+  $('term-label').textContent = activeTerm().name;
+  if (currentView === 'home') renderHome();
+  if (currentView === 'exams') renderExams();
+  if (currentView === 'analysis') renderAnalysis();
+  if (currentView === 'mistakes') renderMistakes();
+  if (currentView === 'settings') renderSettings();
+}
+function updateTermLabel() { $('term-label').textContent = activeTerm().name; }
+</script>
+<script>
+/* ============================================================
+   视图渲染
+   ============================================================ */
+const EXAM_TYPES = {
+  monthly: { name: '月考', cls: 'monthly' },
+  midterm: { name: '期中', cls: 'midterm' },
+  final: { name: '期末', cls: 'final' },
+  mock: { name: '模拟考', cls: 'mock' },
+  other: { name: '其他', cls: '' }
+};
+
+/* ---------------- 概览 ---------------- */
+let homeChartSubject = 'total';
+
+function renderHome() {
+  const box = $('home-content');
+  const term = activeTerm();
+  const pool = sortExams(examsInTerm(term.id));
+  const label = { raw: '', weighted: '加权', assigned: '赋分' }[currentMode()] || '';
+
+  if (pool.length === 0) {
+    box.innerHTML = `
+      ${countdownHTML()}
+      <div class="card"><div class="empty">
+        <b>还没有 ${esc(term.name)} 的成绩</b>
+        点右下角 + 记录第一次考试，<br>或者先看看示例数据长什么样。
+        <div style="margin-top:14px;display:flex;gap:9px;justify-content:center">
+          <button class="btn btn-primary btn-sm" onclick="openExamModal()">录入考试</button>
+          <button class="btn btn-outline btn-sm" onclick="loadDemoData()">加载示例</button>
+        </div>
+      </div></div>`;
+    return;
+  }
+
+  const last = pool[pool.length - 1];
+  const prev = prevExamOf(last, pool);
+  const t = examTotalDisplay(last);
+  const tp = prev ? examTotalDisplay(prev) : null;
+  const rated = t.full ? t.value / t.full : 0;
+
+  // 学期统计
+  const totals = pool.map(e => examTotalDisplay(e).value);
+  const avg = totals.reduce((a, b) => a + b, 0) / totals.length;
+  const best = Math.max(...totals);
+  const first = totals[0];
+
+  box.innerHTML = `
+    ${countdownHTML()}
+    ${reminderHTML()}
+    <div class="overview-grid">
+      <div class="ov" style="grid-column:span 2">
+        <div class="label">最近一次 · ${esc(last.name)}</div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px">
+          <div class="value">${t.value}<small>/ ${t.full}${label ? ' · ' + label : ''}</small></div>
+          <div style="text-align:right">
+            <div class="change">${tp ? changeText(t.value, tp.value, false) : '<span class="flat">首次记录</span>'}</div>
+            <div class="hint" style="margin-top:2px">得分率 ${(rated * 100).toFixed(1)}%</div>
+          </div>
+        </div>
+        <div class="bar" style="margin-top:10px"><i style="width:${clamp(rated * 100, 0, 100)}%"></i></div>
+      </div>
+      <div class="ov rank-sensitive">
+        <div class="label">班级排名</div>
+        <div class="value">${last.totalClassRank || '—'}<small>名</small></div>
+        <div class="change">${changeText(last.totalClassRank, prev ? prev.totalClassRank : null, true) || '<span class="flat">—</span>'}</div>
+      </div>
+      <div class="ov rank-sensitive">
+        <div class="label">年级排名</div>
+        <div class="value">${last.totalGradeRank || '—'}<small>名</small></div>
+        <div class="change">${changeText(last.totalGradeRank, prev ? prev.totalGradeRank : null, true) || '<span class="flat">—</span>'}</div>
+      </div>
+      <div class="ov"><div class="label">学期平均总分</div>
+        <div class="value">${round1(avg)}<small>分</small></div>
+        <div class="change flat">共 ${pool.length} 次考试</div></div>
+      <div class="ov"><div class="label">学期最高</div>
+        <div class="value">${round1(best)}<small>分</small></div>
+        <div class="change ${first < best ? 'up' : 'flat'}">${first < best ? '较首次 +' + round1(best - first) : '保持稳定'}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="t-left"><i class="dot"></i>${label || ''}成绩趋势</span>
+        <span class="t-right">${pool.length} 次</span>
+      </div>
+      <div id="home-chart" class="chart"></div>
+    </div>
+
+    ${goalCardHTML(pool)}
+    ${weakSubjectCardHTML(pool)}
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>最近记录</span>
+        <span class="t-right" onclick="switchView('exams')" style="cursor:pointer">全部 ›</span></div>
+      <div class="list">
+        ${pool.slice(-3).reverse().map(e => examItemHTML(e, true)).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>快捷操作</span></div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm btn-block" onclick="openShareCard()">生成成绩卡</button>
+        <button class="btn btn-outline btn-sm btn-block" onclick="openMistakeModal()">记录错题</button>
+      </div>
+    </div>`;
+
+  renderHomeChart(pool);
+}
+
+function countdownHTML() {
+  const ne = state.settings.nextExam || {};
+  if (!ne.date) return '';
+  const left = daysBetween(todayISO(), ne.date);
+  if (left < 0) return '';
+  const urgent = left <= 14;
+  return `<div class="card" style="padding:13px 15px">
+    <div class="countdown">
+      <div class="num">${left}<small>天</small></div>
+      <div class="txt"><b>${esc(ne.name || '下一场考试')}</b>将于 ${fmtDate(ne.date)} 开始${urgent ? '，进入冲刺期' : ''}</div>
+    </div>
+  </div>`;
+}
+
+function reminderHTML() {
+  const ne = state.settings.nextExam || {};
+  if (!ne.date) return '';
+  const left = daysBetween(todayISO(), ne.date);
+  if (left > (state.settings.remindDays || 7) || left < 0) return '';
+  return `<div class="banner"><span>⏰</span><span>距离「${esc(ne.name || '下一场考试')}」还有 <b>${left}</b> 天，别忘了把最近的错题过一遍。</span></div>`;
+}
+
+function goalCardHTML(pool) {
+  const subs = visibleSubjects().filter(s => s.targetScore);
+  if (!subs.length) {
+    return `<div class="card"><div class="card-title"><span class="t-left"><i class="dot"></i>目标达成</span></div>
+      <p class="hint">还没设置目标分数。到「设置 → 科目与目标」里给每科定个目标，这里就会显示达成度和差距。</p></div>`;
+  }
+  const last = pool[pool.length - 1];
+  const rows = subs.map(s => {
+    const r = last.scores && last.scores[s.id];
+    const score = r && r.score !== '' && r.score != null ? Number(r.score) : null;
+    const pct = score == null ? 0 : clamp(score / s.targetScore * 100, 0, 100);
+    const diff = score == null ? null : round1(score - s.targetScore);
+    return `<div style="margin-bottom:9px">
+      <div class="goal-row"><span>${esc(s.name)}</span>
+        <span>${score == null ? '未考' : score + ' / ' + s.targetScore}
+        ${diff == null ? '' : `<b style="margin-left:6px;color:${diff >= 0 ? 'var(--ok)' : 'var(--danger)'}">${diff >= 0 ? '+' : ''}${diff}</b>`}</span>
+      </div>
+      <div class="bar"><i style="width:${pct}%;background:${diff != null && diff >= 0 ? 'var(--ok)' : 'var(--accent)'}"></i></div>
+    </div>`;
+  }).join('');
+  const hit = subs.filter(s => {
+    const r = last.scores && last.scores[s.id];
+    return r && Number(r.score) >= s.targetScore;
+  }).length;
+  return `<div class="card">
+    <div class="card-title"><span class="t-left"><i class="dot"></i>目标达成</span>
+      <span class="t-right">${hit}/${subs.length} 达标</span></div>
+    ${rows}
+  </div>`;
+}
+
+function weakSubjectCardHTML(pool) {
+  const stats = subjectStats(pool);
+  const rows = [];
+  visibleSubjects().forEach(s => {
+    const st = stats[s.id];
+    if (!st) return;
+    const r = pool[pool.length - 1].scores && pool[pool.length - 1].scores[s.id];
+    const full = (r && Number(r.fullScore)) || s.fullScore;
+    const rate = r && r.score != null ? Number(r.score) / full : st.mean;
+    const z = (rate - st.mean) / st.std;
+    const room = (1 - st.mean) * full;            // 提分空间（按满分折算）
+    rows.push({ name: s.name, z, room, rate, mean: st.mean });
+  });
+  if (rows.length < 2) return '';
+  rows.sort((a, b) => a.z - b.z);
+  const weak = rows.slice(0, 2);
+  return `<div class="card">
+    <div class="card-title"><span class="t-left"><i class="dot"></i>相对短板</span>
+      <span class="t-right" onclick="state.analysisTab='strength';switchView('analysis')" style="cursor:pointer">详细分析 ›</span></div>
+    <div class="list">
+      ${weak.map(w => `<div class="item" style="cursor:default">
+        <div class="body"><div class="name">${esc(w.name)}</div>
+          <div class="meta">得分率 ${(w.rate * 100).toFixed(0)}% · 个人均值 ${(w.mean * 100).toFixed(0)}%</div></div>
+        <div class="right"><div class="total" style="font-size:14px;color:var(--danger)">Z ${w.z.toFixed(2)}</div></div>
+      </div>`).join('')}
+    </div>
+    <p class="hint" style="margin-top:8px">Z 为负说明这科相对自己的其他科目偏弱——不是分数低，而是「比自己的平均水平更拖后腿」。</p>
+  </div>`;
+}
+
+function examItemHTML(e, compact) {
+  const type = EXAM_TYPES[e.type] || EXAM_TYPES.other;
+  const t = examTotalDisplay(e);
+  const d = e.date ? new Date(e.date + 'T00:00:00') : null;
+  const day = d ? String(d.getDate()).padStart(2, '0') : '--';
+  const mon = d ? (d.getMonth() + 1) + '月' : '';
+  return `<div class="item" onclick="openDetailModal('${e.id}')">
+    <div class="date-badge"><b>${day}</b><span>${mon}</span></div>
+    <div class="body">
+      <div class="name">${esc(e.name)}</div>
+      <div class="meta">
+        <span class="tag ${type.cls}">${type.name}</span>
+        ${!compact && e.totalClassRank ? `<span class="rank-sensitive">班 ${e.totalClassRank}</span>` : ''}
+        <span>${t.full} 分制</span>
+      </div>
+    </div>
+    <div class="right"><div class="total">${t.value}</div></div>
+  </div>`;
+}
+
+/* ---------------- 成绩列表 ---------------- */
+let examFilter = { q: '', type: 'all' };
+function renderExams() {
+  const box = $('exams-content');
+  box.innerHTML = `
+    <div class="card" style="padding:12px 13px">
+      <input class="form-input" id="exam-search" placeholder="搜索考试名称" value="${esc(examFilter.q)}"
+             oninput="examFilter.q=this.value;renderExamList()">
+      <div class="chip-row" style="margin-top:9px">
+        <button class="chip ${examFilter.type === 'all' ? 'on' : ''}" onclick="examFilter.type='all';renderExams()">全部</button>
+        ${Object.entries(EXAM_TYPES).map(([k, v]) =>
+    `<button class="chip ${examFilter.type === k ? 'on' : ''}" onclick="examFilter.type='${k}';renderExams()">${v.name}</button>`).join('')}
+      </div>
+    </div>
+    <div id="exam-list"></div>
+    <p class="hint" style="text-align:center;margin-top:14px">当前学期：${esc(activeTerm().name)} · 共 ${examsInTerm(activeTerm().id).length} 次考试</p>`;
+  renderExamList();
+}
+
+function renderExamList() {
+  const box = $('exam-list');
+  if (!box) return;
+  const pool = sortExams(examsInTerm(state.settings.activeTermId)).reverse();
+  const filtered = pool.filter(e => {
+    if (examFilter.type !== 'all' && e.type !== examFilter.type) return false;
+    if (examFilter.q && !(e.name || '').toLowerCase().includes(examFilter.q.toLowerCase())) return false;
+    return true;
+  });
+  box.innerHTML = filtered.length
+    ? `<div class="list">${filtered.map(e => examItemHTML(e)).join('')}</div>`
+    : `<div class="card"><div class="empty"><b>没有符合条件的考试</b>换个筛选条件，或点右下角 + 新增一条。</div></div>`;
+}
+
+/* ---------------- 分析 ---------------- */
+if (typeof state !== 'undefined' && !state.analysisTab) state.analysisTab = 'trend';
+let analysisTab = 'trend';
+let trendSubject = 'total';
+
+function renderAnalysis() {
+  const box = $('analysis-content');
+  const pool = sortExams(examsInTerm(state.settings.activeTermId));
+  analysisTab = state.analysisTab || 'trend';
+
+  box.innerHTML = `
+    <div class="seg" style="margin-bottom:12px">
+      <button class="${analysisTab === 'trend' ? 'active' : ''}" onclick="state.analysisTab='trend';renderAnalysis()">趋势</button>
+      <button class="${analysisTab === 'strength' ? 'active' : ''}" onclick="state.analysisTab='strength';renderAnalysis()">强弱</button>
+      <button class="${analysisTab === 'rank' ? 'active' : ''}" onclick="state.analysisTab='rank';renderAnalysis()">位次</button>
+    </div>
+    <div id="analysis-body"></div>`;
+
+  if (analysisTab === 'trend') renderTrendTab(pool);
+  else if (analysisTab === 'strength') renderStrengthTab(pool);
+  else renderRankTab();
+
+  $('term-label').textContent = activeTerm().name;
+}
+
+function renderTrendTab(pool) {
+  const body = $('analysis-body');
+  if (pool.length < 2) {
+    body.innerHTML = `<div class="card"><div class="empty"><b>至少需要 2 次考试</b>才能画出趋势线，再录一次就够了。</div></div>`;
+    return;
+  }
+  const subs = visibleSubjects();
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>分数趋势</span>
+        <span class="t-right">${esc(activeTerm().name)}</span></div>
+      <div class="chip-row" style="margin-bottom:10px">
+        <button class="chip ${trendSubject === 'total' ? 'on' : ''}" onclick="trendSubject='total';renderAnalysis()">总分</button>
+        ${subs.map(s => `<button class="chip ${trendSubject === s.id ? 'on' : ''}"
+          onclick="trendSubject='${s.id}';renderAnalysis()">${esc(s.name)}</button>`).join('')}
+      </div>
+      <div id="trend-chart" class="chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>排名变化 <span class="badge-mini">越低越好</span></span></div>
+      <div id="rank-chart" class="chart"></div>
+      <p class="hint" style="margin-top:6px">纵轴为名次，越靠上名次越好。没有填写排名的考试会留空。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>逐次变化</span></div>
+      <div class="list">
+        ${pool.slice().reverse().map((e, i, arr) => {
+    const prev = prevExamOf(e, pool);
+    const t = examTotalDisplay(e), tp = prev ? examTotalDisplay(prev) : null;
+    return `<div class="item" style="cursor:default">
+            <div class="date-badge"><b>${e.date ? e.date.slice(8, 10) : '--'}</b><span>${e.date ? Number(e.date.slice(5, 7)) + '月' : ''}</span></div>
+            <div class="body"><div class="name">${esc(e.name)}</div>
+              <div class="meta">${tp ? changeText(t.value, tp.value, false) : '<span class="flat">首次</span>'}</div></div>
+            <div class="right"><div class="total">${t.value}</div></div>
+          </div>`;
+  }).join('')}
+      </div>
+    </div>`;
+  renderTrendCharts(pool);
+}
+
+function renderStrengthTab(pool) {
+  const body = $('analysis-body');
+  const stats = subjectStats(pool);
+  const keys = Object.keys(stats);
+  if (keys.length === 0 || pool.length < 2) {
+    body.innerHTML = `<div class="card"><div class="empty"><b>数据还不够</b>至少两次考试、且有成绩的科目才能做强弱对比。</div></div>`;
+    return;
+  }
+  // 最近一次各科 Z
+  const last = pool[pool.length - 1];
+  const rows = [];
+  visibleSubjects().forEach(s => {
+    const st = stats[s.id];
+    const r = last.scores && last.scores[s.id];
+    if (!st || !r || r.score == null || r.score === '') return;
+    const full = Number(r.fullScore) || s.fullScore;
+    const rate = clamp(Number(r.score) / full, 0, 1.2);
+    const z = (rate - st.mean) / st.std;
+    rows.push({
+      id: s.id, name: s.name, z, rate, mean: st.mean,
+      score: Number(r.score), full, room: round1((1 - st.mean) * full)
+    });
+  });
+  rows.sort((a, b) => a.z - b.z);
+  if (!rows.length) {
+    body.innerHTML = `<div class="card"><div class="empty"><b>最近一次考试没有成绩</b>先补录一场完整的考试再看强弱。</div></div>`;
+    return;
+  }
+  const totalRoom = rows.reduce((a, b) => a + b.room, 0);
+
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>相对强弱（Z 分数）</span>
+        <span class="t-right">基于 ${pool.length} 次考试</span></div>
+      <div id="z-chart" class="chart"></div>
+      <p class="hint">Z = 0 表示这科和你自己其他科一样稳；负数越大，说明它相对越拖后腿。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>提分优先级</span>
+        <span class="t-right">空间合计 ${round1(totalRoom)} 分</span></div>
+      <div class="list">
+        ${rows.map((r, i) => `<div class="item" style="cursor:default">
+          <div class="date-badge" style="background:${i === 0 ? 'var(--danger-soft)' : 'var(--card-2)'}">
+            <b style="font-size:15px;color:${i === 0 ? 'var(--danger)' : 'var(--ink)'}">${i + 1}</b><span>优先</span></div>
+          <div class="body"><div class="name">${esc(r.name)}</div>
+            <div class="meta">本次 ${r.score}/${r.full} · 个人均值 ${(r.mean * 100).toFixed(0)}% · Z ${r.z.toFixed(2)}</div></div>
+          <div class="right"><div class="total" style="font-size:14px">+${r.room}<small style="font-size:10px;color:var(--muted)"> 分</small></div></div>
+        </div>`).join('')}
+      </div>
+      <p class="hint" style="margin-top:8px">「提分空间」按当前个人均分到满分的差值估算，只反映这科还能涨多少，不代表投入产出比。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>能力雷达</span></div>
+      <div id="radar-chart" class="chart"></div>
+    </div>`;
+  renderStrengthCharts(rows, stats, last);
+}
+
+/* ---------------- 位次（一分一段） ---------------- */
+function renderRankTab() {
+  const body = $('analysis-body');
+  const d = state.scoreData;
+  const meta = scoreDataMeta();
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>分数 → 位次换算</span>
+        <span class="t-right">${d ? esc(d.province || meta.province || '') + ' ' + (d.year || '') : '无数据'}</span></div>
+      <div class="card-title" style="margin:-4px 0 10px">
+        <span class="t-right">${d ? (d.subjectType ? esc(d.subjectType) + ' · ' : '') + '数据版本 ' + esc(d.version || '-') : ''}</span>
+        <span class="t-right" onclick="openDataModal()" style="cursor:pointer;color:var(--brand)">管理数据 ›</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2"><label class="form-label">高考总分（750 制）</label>
+          <input type="number" inputmode="decimal" class="form-input" id="rk-score" placeholder="如 612"
+                 value="" oninput="recalcRank()"></div>
+        <div class="form-group" style="flex:1.2"><label class="form-label">批次线</label>
+          <select class="form-input" id="rk-line" onchange="recalcRank()"></select></div>
+      </div>
+      <div class="chip-row" style="margin-bottom:10px">
+        <button class="chip" onclick="fillScoreFromRate()">用最近一次得分率折算 750 分制</button>
+      </div>
+      <div id="rank-result"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>数据来源</span></div>
+      ${dataStatusHTML()}
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-outline btn-sm btn-block" onclick="openDataModal()">导入/更新</button>
+        <button class="btn btn-primary btn-sm btn-block" onclick="checkScoreDataUpdate(true)">自动更新</button>
+      </div>
+      <p class="hint" style="margin-top:10px">一分一段表与省控线以各省教育考试院公布的为准。本工具只做本地换算，结果仅供参考，志愿填报请以官方数据为准。</p>
+    </div>`;
+  fillLineSelect();
+  recalcRank();
+}
+
+function lastScoreGuess() {
+  const pool = sortExams(examsInTerm(state.settings.activeTermId));
+  if (!pool.length) return '';
+  const t = examTotalDisplay(pool[pool.length - 1]);
+  return t.value ? String(t.value) : '';
+}
+
+function fillScoreFromRate() {
+  const pool = sortExams(examsInTerm(state.settings.activeTermId));
+  if (!pool.length) { toast('还没有考试记录'); return; }
+  const t = examTotalDisplay(pool[pool.length - 1]);
+  if (!t.full) return;
+  const converted = Math.round(t.value / t.full * 750);
+  $('rk-score').value = String(converted);
+  recalcRank();
+  toast('按得分率折算约 ' + converted + ' 分（仅估算）');
+}
+
+function renderMistakes() { renderMistakesView(); }
+</script>
+<script>
+/* ============================================================
+   图表（统一管理实例，避免泄漏；不使用 per-chart ResizeObserver）
+   ============================================================ */
+const charts = {};
+
+function isDark() { return document.documentElement.dataset.theme === 'dark'; }
+function palette() {
+  return isDark()
+    ? { brand: '#8fb6e8', accent: '#f0a94a', ok: '#4ade80', danger: '#f87171', grid: '#28313d', text: '#7c8899', area: 'rgba(143,182,232,.22)' }
+    : { brand: '#1e3a5f', accent: '#d97706', ok: '#059669', danger: '#dc2626', grid: '#eef2f7', text: '#93a0b1', area: 'rgba(30,58,95,.14)' };
+}
+
+function mountChart(elId) {
+  const el = $(elId);
+  if (!el) return null;
+  if (typeof echarts === 'undefined') {
+    el.innerHTML = '<div class="empty">图表库未加载（echarts.min.js 缺失）</div>';
+    return null;
+  }
+  if (charts[elId]) { try { charts[elId].dispose(); } catch (e) { } delete charts[elId]; }
+  const c = echarts.init(el, null, { renderer: 'canvas' });
+  charts[elId] = c;
+  return c;
+}
+window.addEventListener('resize', () => {
+  Object.keys(charts).forEach(k => { try { charts[k].resize(); } catch (e) { } });
+});
+
+function disposeAllCharts() {
+  Object.keys(charts).forEach(k => { try { charts[k].dispose(); } catch (e) { } delete charts[k]; });
+}
+
+const axisBase = (p) => ({
+  axisLine: { lineStyle: { color: p.grid } },
+  axisTick: { show: false },
+  axisLabel: { color: p.text, fontSize: 10.5 },
+  splitLine: { lineStyle: { color: p.grid, type: 'dashed' } }
+});
+
+function shortLabel(e) {
+  if (!e.date) return e.name.slice(0, 4);
+  const [, m, d] = e.date.split('-');
+  return `${Number(m)}/${Number(d)}`;
+}
+
+/* 首页：总分趋势 */
+function renderHomeChart(pool) {
+  const c = mountChart('home-chart');
+  if (!c) return;
+  const p = palette();
+  const mode = currentMode();
+  const data = pool.map(e => totalFor(e, mode).value);
+  const full = totalFor(pool[pool.length - 1], mode).full;
+  const avg = round1(data.reduce((a, b) => a + b, 0) / data.length);
+
+  c.setOption({
+    grid: { left: 8, right: 14, top: 16, bottom: 6, containLabel: true },
+    tooltip: { trigger: 'axis', backgroundColor: isDark() ? '#1e2631' : '#fff', borderColor: p.grid, textStyle: { color: isDark() ? '#e9eef6' : '#151c27', fontSize: 12 } },
+    xAxis: Object.assign({ type: 'category', data: pool.map(shortLabel), boundaryGap: false }, axisBase(p)),
+    yAxis: Object.assign({ type: 'value', min: (v) => Math.max(0, Math.floor((v.min - full * 0.06) / 10) * 10), max: full }, axisBase(p)),
+    series: [{
+      type: 'line', data, smooth: true, symbol: 'circle', symbolSize: 7, connectNulls: true,
+      lineStyle: { width: 2.6, color: p.brand },
+      itemStyle: { color: p.brand, borderWidth: 2, borderColor: isDark() ? '#181f28' : '#fff' },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: p.area }, { offset: 1, color: 'rgba(0,0,0,0)' }])
+      },
+      label: { show: true, position: 'top', fontSize: 10.5, color: p.text, formatter: (o) => o.value },
+      markLine: {
+        silent: true, symbol: 'none',
+        data: [{ yAxis: avg, label: { formatter: '均 ' + avg, fontSize: 10, color: p.accent }, lineStyle: { color: p.accent, type: 'dashed', width: 1 } }]
+      }
+    }]
+  });
+}
+
+/* 分析：趋势 + 排名 */
+function renderTrendCharts(pool) {
+  const p = palette();
+  const isTotal = trendSubject === 'total';
+  const sub = isTotal ? null : subjectById(trendSubject);
+
+  const c1 = mountChart('trend-chart');
+  if (c1) {
+    const data = pool.map(e => {
+      if (isTotal) return totalFor(e, currentMode()).value;
+      const r = e.scores && e.scores[sub.id];
+      return r && r.score !== '' && r.score != null ? Number(r.score) : null;
+    });
+    const full = isTotal ? totalFor(pool[pool.length - 1], currentMode()).full : sub.fullScore;
+    c1.setOption({
+      grid: { left: 8, right: 14, top: 20, bottom: 6, containLabel: true },
+      tooltip: { trigger: 'axis', backgroundColor: isDark() ? '#1e2631' : '#fff', borderColor: p.grid, textStyle: { color: isDark() ? '#e9eef6' : '#151c27', fontSize: 12 } },
+      xAxis: Object.assign({ type: 'category', data: pool.map(shortLabel), boundaryGap: false }, axisBase(p)),
+      yAxis: Object.assign({ type: 'value', scale: true }, axisBase(p)),
+      series: [{
+        type: 'line', data, smooth: true, symbol: 'circle', symbolSize: 7, connectNulls: false,
+        lineStyle: { width: 2.6, color: p.brand },
+        itemStyle: { color: p.brand, borderWidth: 2, borderColor: isDark() ? '#181f28' : '#fff' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: p.area }, { offset: 1, color: 'rgba(0,0,0,0)' }])
+        },
+        label: { show: true, position: 'top', fontSize: 10.5, color: p.text },
+        markLine: full ? {
+          silent: true, symbol: 'none',
+          data: [{ yAxis: full, label: { formatter: '满分 ' + full, fontSize: 10, color: p.text }, lineStyle: { color: p.grid, type: 'dotted', width: 1 } }]
+        } : undefined
+      }]
+    });
+  }
+
+  const c2 = mountChart('rank-chart');
+  if (c2) {
+    const cls = pool.map(e => e.totalClassRank || null);
+    const grd = pool.map(e => e.totalGradeRank || null);
+    const has = cls.some(v => v) || grd.some(v => v);
+    if (!has) {
+      c2.clear();
+      c2.setOption({
+        title: { text: '还没有排名数据\n录入考试时填上班排/年排即可看到曲线', left: 'center', top: 'middle', textStyle: { fontSize: 12, color: p.text, lineHeight: 20, fontWeight: 'normal' } }
+      });
+    } else {
+      c2.setOption({
+        grid: { left: 8, right: 14, top: 30, bottom: 6, containLabel: true },
+        legend: { data: ['班级排名', '年级排名'], right: 0, top: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 10.5, color: p.text } },
+        tooltip: { trigger: 'axis', backgroundColor: isDark() ? '#1e2631' : '#fff', borderColor: p.grid, textStyle: { color: isDark() ? '#e9eef6' : '#151c27', fontSize: 12 } },
+        xAxis: Object.assign({ type: 'category', data: pool.map(shortLabel) }, axisBase(p)),
+        yAxis: Object.assign({ type: 'value', inverse: true, minInterval: 1, name: '名次', nameTextStyle: { color: p.text, fontSize: 10 } }, axisBase(p)),
+        series: [
+          { name: '班级排名', type: 'line', data: cls, smooth: true, connectNulls: true, symbolSize: 6, lineStyle: { width: 2.2, color: p.accent }, itemStyle: { color: p.accent } },
+          { name: '年级排名', type: 'line', data: grd, smooth: true, connectNulls: true, symbolSize: 6, lineStyle: { width: 2.2, color: p.brand }, itemStyle: { color: p.brand } }
+        ]
+      });
+    }
+  }
+}
+
+/* 分析：Z 分数条形 + 雷达 */
+function renderStrengthCharts(rows, stats, last) {
+  const p = palette();
+  const c1 = mountChart('z-chart');
+  if (c1) {
+    const sorted = [...rows].sort((a, b) => a.z - b.z);
+    c1.setOption({
+      grid: { left: 8, right: 26, top: 10, bottom: 6, containLabel: true },
+      tooltip: {
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        backgroundColor: isDark() ? '#1e2631' : '#fff', borderColor: p.grid,
+        textStyle: { color: isDark() ? '#e9eef6' : '#151c27', fontSize: 12 },
+        formatter: (arr) => `${arr[0].name}<br/>Z = ${arr[0].value}`
+      },
+      xAxis: Object.assign({ type: 'value', min: -2, max: 2 }, axisBase(p)),
+      yAxis: Object.assign({ type: 'category', data: sorted.map(r => r.name), axisLabel: { color: p.text, fontSize: 11 } }, axisBase(p)),
+      series: [{
+        type: 'bar', data: sorted.map(r => ({ value: Number(r.z.toFixed(2)), itemStyle: { color: r.z < 0 ? p.danger : p.ok, borderRadius: [0, 4, 4, 0] } })),
+        barWidth: '58%',
+        label: { show: true, position: 'right', fontSize: 10.5, color: p.text, formatter: (o) => o.value }
+      }]
+    });
+  }
+
+  const c2 = mountChart('radar-chart');
+  if (c2) {
+    const subs = visibleSubjects().filter(s => last.scores && last.scores[s.id] && last.scores[s.id].score != null);
+    if (subs.length < 3) {
+      c2.clear();
+      c2.setOption({ title: { text: '科目少于 3 科，无法绘制雷达', left: 'center', top: 'middle', textStyle: { fontSize: 12, color: p.text, fontWeight: 'normal' } } });
+    } else {
+      c2.setOption({
+        legend: { data: ['本次得分率', '个人均值'], bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 10.5, color: p.text } },
+        tooltip: { backgroundColor: isDark() ? '#1e2631' : '#fff', borderColor: p.grid, textStyle: { color: isDark() ? '#e9eef6' : '#151c27', fontSize: 12 } },
+        radar: {
+          indicator: subs.map(s => ({ name: s.name, max: 100 })),
+          radius: '62%', center: ['50%', '48%'],
+          axisName: { color: p.text, fontSize: 10.5 },
+          splitLine: { lineStyle: { color: p.grid } },
+          splitArea: { areaStyle: { color: ['transparent'] } },
+          axisLine: { lineStyle: { color: p.grid } }
+        },
+        series: [{
+          type: 'radar',
+          data: [
+            {
+              name: '本次得分率', value: subs.map(s => {
+                const r = last.scores[s.id]; const full = Number(r.fullScore) || s.fullScore;
+                return round1(Number(r.score) / full * 100);
+              }),
+              lineStyle: { color: p.accent, width: 2 }, itemStyle: { color: p.accent },
+              areaStyle: { color: 'rgba(217,119,6,.16)' }
+            },
+            {
+              name: '个人均值', value: subs.map(s => stats[s.id] ? round1(stats[s.id].mean * 100) : 0),
+              lineStyle: { color: p.brand, width: 2, type: 'dashed' }, itemStyle: { color: p.brand },
+              areaStyle: { color: 'rgba(30,58,95,.08)' }
+            }
+          ]
+        }]
+      });
+    }
+  }
+}
+</script>
+<script>
+/* ============================================================
+   一分一段表 / 省控线：本地换算 + 可选自动更新
+   ============================================================ */
+
+function scoreDataMeta() {
+  return {
+    province: state.settings.province || '',
+    year: state.settings.year || ''
+  };
+}
+
+function hasScoreData() {
+  return !!(state.scoreData && Array.isArray(state.scoreData.segments) && state.scoreData.segments.length);
+}
+
+function scoreDataMeta2() { return scoreDataMeta(); }
+
+function dataStatusHTML() {
+  const d = state.scoreData;
+  if (!d) {
+    return `<div class="banner info"><span>ⓘ</span><span>还没有导入分数线数据。可以先载入一份<b>示例数据</b>体验换算流程，真实填报请导入本省考试院发布的官方一分一段表。</span></div>`;
+  }
+  const isDemo = d.source === 'demo';
+  const srcText = isDemo ? '示例数据（非真实，仅演示）'
+    : d.source === 'remote' ? '在线更新' : '本地导入';
+  return `<div class="banner ${isDemo ? '' : 'ok'}">
+    <span>${isDemo ? '⚠' : '✓'}</span>
+    <span>
+      <b>${esc(d.province || '未指定省份')} ${d.year || ''} ${esc(d.subjectType || '')}</b><br>
+      来源：${srcText} · 版本 ${esc(d.version || '-')} · 共 ${d.segments.length} 个分段<br>
+      更新时间：${d.updatedAt ? fmtDate(String(d.updatedAt).slice(0, 10)) : '未知'}
+      ${isDemo ? '<br>示例数据不可用于真实志愿填报。' : ''}
+    </span>
+  </div>`;
+}
+
+function fillLineSelect() {
+  const sel = $('rk-line');
+  if (!sel) return;
+  const lines = (state.scoreData && state.scoreData.controlLines) || [];
+  sel.innerHTML = '<option value="">不对比</option>' +
+    lines.map((l, i) => `<option value="${i}">${esc(l.name)}</option>`).join('');
+}
+
+function findSegment(score) {
+  const d = state.scoreData;
+  if (!d || !d.segments || !d.segments.length) return null;
+  const segs = d.segments;
+  let hit = null;
+  for (let i = 0; i < segs.length; i++) {
+    if (segs[i].score <= score) { hit = segs[i]; break; }
+  }
+  if (!hit) return { below: true, seg: segs[segs.length - 1] };
+  if (score > segs[0].score) return { above: true, seg: segs[0] };
+  return { seg: hit };
+}
+
+function recalcRank() {
+  const box = $('rank-result');
+  if (!box) return;
+  const raw = $('rk-score').value;
+  const score = parseFloat(raw);
+  const p = palette();
+
+  if (!hasScoreData()) {
+    box.innerHTML = '<p class="hint">请先在下方导入一分一段表数据。</p>';
+    return;
+  }
+  if (!raw || isNaN(score)) {
+    box.innerHTML = '<p class="hint">输入分数后自动换算位次。</p>';
+    return;
+  }
+
+  const res = findSegment(score);
+  if (!res || !res.seg) { box.innerHTML = '<p class="hint">该分数不在数据表范围内。</p>'; return; }
+  const seg = res.seg;
+  const segs = state.scoreData.segments;
+  const totalAll = segs[segs.length - 1].cumulative || segs[segs.length - 1].score;
+  const cum = seg.cumulative;
+  const cnt = seg.count || 1;
+  const low = Math.max(1, cum - cnt + 1);
+  const better = clamp((totalAll - cum) / totalAll * 100, 0, 100);
+
+  let lineHTML = '';
+  const sel = $('rk-line');
+  const lines = (state.scoreData.controlLines || []);
+  if (sel && sel.value !== '' && lines[Number(sel.value)]) {
+    const line = lines[Number(sel.value)];
+    const diff = round1(score - line.score);
+    const pass = diff >= 0;
+    lineHTML = `<div class="banner ${pass ? 'ok' : ''}" style="margin:10px 0 0">
+      <span>${pass ? '✓' : '✕'}</span>
+      <span>${pass
+        ? `高于「${esc(line.name)}」<b>${diff}</b> 分`
+        : `低于「${esc(line.name)}」<b>${Math.abs(diff)}</b> 分`}（线 ${line.score}）</span>
+    </div>`;
+  }
+
+  const demoTag = state.scoreData.source === 'demo'
+    ? '<span class="badge-mini" style="background:var(--danger-soft);color:var(--danger)">示例数据</span>' : '';
+
+  const rankText = res.above ? '≤ ' + cum : res.below ? '> ' + cum : cum.toLocaleString();
+  const rangeText = res.above ? '1 ~ ' + cum.toLocaleString()
+    : res.below ? cum.toLocaleString() + ' 以后'
+      : low.toLocaleString() + ' ~ ' + cum.toLocaleString();
+
+  box.innerHTML = `
+    <div class="kv-grid">
+      <div class="kv"><div class="k">估算位次 ${demoTag}</div>
+        <div class="v" style="color:${p.brand}">${rankText}</div></div>
+      <div class="kv"><div class="k">同分人数</div>
+        <div class="v">${res.above || res.below ? '—' : cnt + ' 人'}</div></div>
+      <div class="kv"><div class="k">位次区间</div>
+        <div class="v" style="font-size:13.5px">${rangeText}</div></div>
+      <div class="kv"><div class="k">超过考生</div>
+        <div class="v" style="color:${p.ok}">${better.toFixed(1)}%</div></div>
+    </div>
+    ${lineHTML}
+    <p class="hint" style="margin-top:8px">位次 = 该分数及以上累计人数，是估算值；同分考生实际排序由各省规则（单科成绩等）决定。</p>`;
+}
+
+/* ---------- 数据校验 / 归一化 ---------- */
+function normalizeScoreData(obj) {
+  if (!obj || !Array.isArray(obj.segments) || !obj.segments.length) throw new Error('缺少 segments 数组');
+  const segs = obj.segments.map(s => ({
+    score: Number(s.score),
+    count: Number(s.count || s.num || s.people || 0),
+    cumulative: s.cumulative != null ? Number(s.cumulative) : null
+  })).filter(s => !isNaN(s.score)).sort((a, b) => b.score - a.score);
+
+  // 补累计人数
+  let acc = 0;
+  segs.forEach(s => {
+    if (s.cumulative == null || isNaN(s.cumulative)) { acc += s.count; s.cumulative = acc; }
+    else { acc = s.cumulative; }
+    if (!s.count) s.count = 1;
+  });
+
+  const lines = Array.isArray(obj.controlLines) ? obj.controlLines.map(l => ({
+    name: String(l.name || l.batch || '控制线'),
+    score: Number(l.score != null ? l.score : l.line)
+  })).filter(l => !isNaN(l.score)) : [];
+
+  return {
+    province: obj.province || state.settings.province || '',
+    year: obj.year || '',
+    subjectType: obj.subjectType || obj.type || '',
+    version: obj.version || (obj.year ? obj.year + '.1' : 'local'),
+    source: obj.source || 'import',
+    updatedAt: obj.updatedAt || new Date().toISOString(),
+    note: obj.note || '',
+    segments: segs,
+    controlLines: lines
+  };
+}
+
+/* ---------- 解析 CSV / TSV（考试院常见格式） ---------- */
+function parseScoreTable(text) {
+  const rows = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!rows.length) throw new Error('内容为空');
+  const out = { segments: [], controlLines: [], version: 'local', source: 'import' };
+  let headerSkipped = false;
+
+  rows.forEach(line => {
+    const cells = line.split(/[,\t，;]/).map(c => c.trim().replace(/^"|"$/g, ''));
+    // 省控线：第一列不是数字（如「本科批|一段线」），第二列是数字
+    if (cells.length >= 2 && isNaN(Number(cells[0])) && !isNaN(Number(cells[1])) && !/分数|score/i.test(cells[0])) {
+      if (/[线批段控制]/.test(cells[0]) || /line/i.test(cells[0])) {
+        out.controlLines.push({ name: cells[0], score: Number(cells[1]) });
+        return;
+      }
+    }
+    const nums = cells.map(c => Number(c.replace(/[^\d.\-]/g, ''))).filter(n => !isNaN(n));
+    if (nums.length >= 3) {
+      // 分数, 本段人数, 累计人数
+      out.segments.push({ score: nums[0], count: nums[1], cumulative: nums[2] });
+    } else if (nums.length === 2) {
+      out.segments.push({ score: nums[0], count: nums[1], cumulative: null });
+    } else if (!headerSkipped && /分数|score/i.test(line)) {
+      headerSkipped = true;
+    }
+  });
+
+  if (!out.segments.length) throw new Error('没有识别到「分数 / 本段人数 / 累计人数」列');
+  return normalizeScoreData(out);
+}
+
+/* ---------- 示例数据（明确标注，非真实） ---------- */
+function buildDemoScoreData() {
+  const total = 180000, mean = 478, sd = 88;
+  const raw = [];
+  for (let s = 750; s >= 200; s--) {
+    const z = ((s + 0.5) - mean) / sd;
+    raw.push({ score: s, count: Math.exp(-0.5 * z * z) });
+  }
+  const sum = raw.reduce((a, b) => a + b.count, 0);
+  let cum = 0;
+  const segments = raw.map(x => {
+    const count = Math.max(1, Math.round(x.count / sum * total));
+    cum += count;
+    return { score: x.score, count, cumulative: cum };
+  });
+  return normalizeScoreData({
+    province: state.settings.province || '示例省',
+    year: state.settings.year || new Date().getFullYear(),
+    subjectType: '示例类',
+    version: 'demo-1.0',
+    source: 'demo',
+    segments,
+    controlLines: [
+      { name: '特殊类型招生控制线', score: 592 },
+      { name: '本科批', score: 495 },
+      { name: '专科批', score: 280 }
+    ],
+    note: '合成数据，仅用于演示界面与换算流程，不可用于真实志愿填报。'
+  });
+}
+
+/* ---------- 数据管理弹层 ---------- */
+function openDataModal() {
+  const d = state.scoreData;
+  const ds = state.settings.dataSource || {};
+  $('data-body').innerHTML = `
+    ${dataStatusHTML()}
+
+    <div class="section-label">数据源（自动更新）</div>
+    <div class="form-group">
+      <label class="form-label">JSON 数据地址</label>
+      <input type="text" class="form-input" id="ds-url" placeholder="https://example.com/score-data.json"
+             value="${esc(ds.url || '')}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">自动检查</label>
+      <div class="chip-row" id="ds-auto-chips">
+        <button class="chip ${ds.auto ? 'on' : ''}" data-v="1" onclick="pickChip('ds-auto-chips',this)">开启（每 24 小时）</button>
+        <button class="chip ${ds.auto ? '' : 'on'}" data-v="0" onclick="pickChip('ds-auto-chips',this)">关闭</button>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline btn-sm btn-block" onclick="saveDataSource()">保存设置</button>
+      <button class="btn btn-primary btn-sm btn-block" onclick="checkScoreDataUpdate(true)">立即拉取</button>
+    </div>
+    <p class="hint" style="margin-top:8px">本安装包已授予 INTERNET 权限，可拉取 HTTPS 地址；目标服务器需允许跨域（CORS），且不支持 http 明文。未填写地址时不会发起任何请求。</p>
+
+    <div class="section-label">本地导入</div>
+    <div class="btn-row">
+      <button class="btn btn-outline btn-sm btn-block" onclick="triggerFileImport('score')">选择 JSON / CSV 文件</button>
+      <button class="btn btn-outline btn-sm btn-block" onclick="loadDemoScoreData()">载入示例数据</button>
+    </div>
+
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">或直接粘贴表格（从考试院页面 / Excel 复制）</label>
+      <textarea class="form-input" id="ds-paste" placeholder="分数	本段人数	累计人数&#10;700	12	120&#10;699	25	145"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm btn-block" onclick="parsePastedScoreData()">解析粘贴内容</button>
+      <button class="btn btn-danger btn-sm btn-block" onclick="clearScoreData()">清除数据</button>
+    </div>
+
+    <div class="section-label">格式说明</div>
+    <p class="hint">
+      JSON：<code>{ "province":"浙江", "year":2025, "subjectType":"普通类", "version":"2025.06",
+      "controlLines":[{"name":"一段线","score":495}], "segments":[{"score":700,"count":12,"cumulative":120}, ...] }</p>
+    <p class="hint">CSV/TSV：每行「分数, 本段人数, 累计人数」，累计列可省略（会自动累加）；第一列为文字且含「线/批」的行会被识别为省控线。</p>
+    <p class="hint">数据源 JSON 与上面的结构完全一致即可。</p>`;
+  openModal('data-modal');
+}
+
+function saveDataSource() {
+  const url = ($('ds-url').value || '').trim();
+  const auto = chipValue('ds-auto-chips') === '1';
+  state.settings.dataSource = Object.assign({}, state.settings.dataSource, { url, auto });
+  saveState(true);
+  toast(url ? '数据源已保存' : '已清空数据源');
+}
+
+function loadDemoScoreData() {
+  state.scoreData = buildDemoScoreData();
+  saveState(true);
+  toast('已载入示例数据（非真实）');
+  openDataModal();
+  if (currentView === 'analysis') renderAnalysis();
+}
+
+function clearScoreData() {
+  showConfirm('确定清除已导入的分数线数据吗？', () => {
+    state.scoreData = null;
+    saveState(true);
+    openDataModal();
+    if (currentView === 'analysis') renderAnalysis();
+    toast('已清除');
+  }, true);
+}
+
+async function checkScoreDataUpdate(manual) {
+  const ds = state.settings.dataSource || {};
+  if (!ds.url) {
+    if (manual) { toast('请先填写数据源地址'); openDataModal(); }
+    return;
+  }
+  if (manual) toast('正在拉取…');
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const url = ds.url + (ds.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    const resp = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const json = await resp.json();
+    const data = normalizeScoreData(Object.assign({}, json, { source: 'remote' }));
+    data.source = 'remote';
+    data.updatedAt = new Date().toISOString();
+    state.scoreData = data;
+    state.settings.dataSource.lastCheck = Date.now();
+    saveState(true);
+    toast('数据已更新：' + (data.version || '最新'));
+    if (currentView === 'analysis') renderAnalysis();
+    if ($('data-modal').classList.contains('show')) openDataModal();
+  } catch (err) {
+    const offline = (typeof navigator !== 'undefined' && navigator.onLine === false);
+    const msg = offline
+      ? '设备当前没有网络连接。'
+      : (/Failed to fetch|NetworkError|abort/i.test(String(err && err.message))
+        ? '无法读取该地址：请确认链接是 HTTPS、服务器允许跨域（CORS）、地址仍然有效。'
+        : String(err && err.message || err));
+    if (manual) {
+      showAlert('自动更新失败\n\n' + msg + '\n\n可以改用「选择文件」或「粘贴表格」导入官方数据。');
+    }
+  }
+}
+
+function autoCheckScoreData() {
+  const ds = state.settings.dataSource || {};
+  if (!ds.auto || !ds.url) return;
+  if (Date.now() - (ds.lastCheck || 0) < 86400000) return;
+  checkScoreDataUpdate(false);
+}
+
+/* ---------- 文件导入（统一入口） ---------- */
+let importMode = 'data';
+function triggerFileImport(mode) {
+  importMode = mode;
+  const input = $('file-import');
+  input.value = '';
+  input.click();
+}
+
+function handleFileImport(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = String(e.target.result || '');
+    try {
+      if (importMode === 'score') {
+        const trimmed = text.trim();
+        if (trimmed.startsWith('{')) {
+          state.scoreData = normalizeScoreData(JSON.parse(trimmed));
+        } else {
+          state.scoreData = parseScoreTable(text);
+        }
+        saveState(true);
+        toast('分数线数据已导入');
+        if (currentView === 'analysis') renderAnalysis();
+        if ($('data-modal').classList.contains('show')) openDataModal();
+      } else if (importMode === 'app') {
+        importAppData(text);
+      }
+    } catch (err) {
+      showAlert('导入失败：' + (err.message || err));
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+  ev.target.value = '';
+}
+
+function parsePastedScoreData() {
+  const text = $('ds-paste').value;
+  if (!text.trim()) { toast('先粘贴内容'); return; }
+  try {
+    state.scoreData = parseScoreTable(text);
+    saveState(true);
+    toast('已解析 ' + state.scoreData.segments.length + ' 个分段');
+    openDataModal();
+    if (currentView === 'analysis') renderAnalysis();
+  } catch (err) {
+    showAlert('解析失败：' + err.message);
+  }
+}
+</script>
+<script>
+/* ============================================================
+   考试录入 / 详情 / 学期
+   ============================================================ */
+let editingExamId = null;
+let currentExamId = null;
+let pendingType = 'monthly';
+
+function showPrompt(title, defVal, onOk, placeholder) {
+  $('dialog-message').innerHTML = `<div style="font-size:15px;font-weight:650;margin-bottom:12px">${esc(title)}</div>
+    <input class="form-input" id="prompt-input" value="${esc(defVal || '')}" placeholder="${esc(placeholder || '')}">`;
+  $('dialog-actions').innerHTML =
+    '<button class="btn btn-outline btn-block" id="dlg-cancel">取消</button>' +
+    '<button class="btn btn-primary btn-block" id="dlg-ok">确定</button>';
+  $('dialog-overlay').classList.add('show');
+  const input = $('prompt-input');
+  setTimeout(() => input.focus(), 60);
+  $('dlg-cancel').onclick = () => $('dialog-overlay').classList.remove('show');
+  $('dlg-ok').onclick = () => {
+    const v = input.value.trim();
+    $('dialog-overlay').classList.remove('show');
+    if (v) onOk(v);
+  };
+}
+
+function openExamModal(editId) {
+  editingExamId = editId || null;
+  const exam = editId ? state.exams.find(e => e.id === editId) : null;
+  $('exam-modal-title').textContent = exam ? '编辑考试' : '添加考试';
+  $('exam-name').value = exam ? exam.name : '';
+  $('exam-date').value = exam ? exam.date : todayISO();
+  $('exam-date-text').value = fmtDate($('exam-date').value);
+  $('exam-note').value = exam ? (exam.note || '') : '';
+  $('total-class-rank').value = exam && exam.totalClassRank ? exam.totalClassRank : '';
+  $('total-grade-rank').value = exam && exam.totalGradeRank ? exam.totalGradeRank : '';
+  pendingType = exam ? exam.type : 'monthly';
+
+  // 学期下拉
+  $('exam-term').innerHTML = state.terms.map(t =>
+    `<option value="${t.id}" ${((exam ? exam.termId : state.settings.activeTermId) === t.id) ? 'selected' : ''}>${esc(t.name)}</option>`).join('');
+
+  // 类型 chips
+  $('exam-type-chips').innerHTML = Object.entries(EXAM_TYPES).map(([k, v]) =>
+    `<button class="chip ${pendingType === k ? 'on' : ''}" data-v="${k}"
+      onclick="pendingType='${k}';pickChip('exam-type-chips',this)">${v.name}</button>`).join('');
+
+  renderSubjectScoreRows(exam);
+  updateTotalDisplay();
+  openModal('exam-modal');
+}
+
+function renderSubjectScoreRows(exam) {
+  const box = $('subject-scores-container');
+  box.innerHTML = visibleSubjects().map(s => {
+    const r = (exam && exam.scores && exam.scores[s.id]) || {};
+    const score = r.score != null ? r.score : '';
+    const full = r.fullScore != null ? r.fullScore : s.fullScore;
+    return `<div class="score-row" data-sid="${s.id}">
+      <div class="sname">${esc(s.name)}${s.assign ? '<span class="badge-mini" style="margin-left:3px">赋</span>' : ''}</div>
+      <input type="number" inputmode="decimal" class="form-input" data-f="score" value="${esc(score)}" placeholder="—" oninput="updateTotalDisplay()">
+      <input type="number" inputmode="decimal" class="form-input" data-f="fullScore" value="${esc(full)}" oninput="updateTotalDisplay()">
+      <input type="number" inputmode="numeric" class="form-input rank-sensitive" data-f="classRank" value="${esc(r.classRank || '')}" placeholder="—">
+      <input type="number" inputmode="numeric" class="form-input rank-sensitive" data-f="gradeRank" value="${esc(r.gradeRank || '')}" placeholder="—">
+    </div>`;
+  }).join('');
+}
+
+function collectExamScores() {
+  const scores = {};
+  $('subject-scores-container').querySelectorAll('.score-row').forEach(row => {
+    const sid = row.dataset.sid;
+    const get = (f) => row.querySelector(`[data-f="${f}"]`).value.trim();
+    const score = get('score');
+    if (score === '') return;                 // 未考科目不记录
+    const fullRaw = get('fullScore');
+    scores[sid] = {
+      score: Number(score),
+      fullScore: fullRaw === '' ? subjectById(sid).fullScore : Number(fullRaw),
+      classRank: get('classRank') ? Number(get('classRank')) : null,
+      gradeRank: get('gradeRank') ? Number(get('gradeRank')) : null
+    };
+  });
+  return scores;
+}
+
+function updateTotalDisplay() {
+  const scores = collectExamScores();
+  const tmp = { scores };
+  const t = totalFor(tmp, currentMode());
+  const modeLabel = { raw: '', weighted: '（加权）', assigned: '（赋分）' }[currentMode()] || '';
+  $('total-score-display').value = t.value + ' / ' + t.full + modeLabel;
+}
+
+function saveExam() {
+  const name = $('exam-name').value.trim();
+  const date = $('exam-date').value;
+  if (!name) { toast('请填写考试名称'); return; }
+  if (!date) { toast('请选择考试日期'); return; }
+  const scores = collectExamScores();
+  if (!Object.keys(scores).length) { toast('至少录入一科成绩'); return; }
+
+  const payload = {
+    id: editingExamId || uid(),
+    name, date,
+    type: pendingType,
+    termId: $('exam-term').value || state.settings.activeTermId,
+    totalClassRank: $('total-class-rank').value ? Number($('total-class-rank').value) : null,
+    totalGradeRank: $('total-grade-rank').value ? Number($('total-grade-rank').value) : null,
+    note: $('exam-note').value.trim(),
+    scores
+  };
+
+  if (editingExamId) {
+    const i = state.exams.findIndex(e => e.id === editingExamId);
+    if (i >= 0) state.exams[i] = payload;
+  } else {
+    state.exams.push(payload);
+  }
+  saveState();
+  closeModal('exam-modal');
+  toast(editingExamId ? '已保存修改' : '已记录');
+  editingExamId = null;
+  renderAll();
+}
+
+function openDetailModal(id) {
+  currentExamId = id;
+  const e = state.exams.find(x => x.id === id);
+  if (!e) return;
+  const pool = examsInTerm(e.termId);
+  const prev = prevExamOf(e, pool);
+  const t = examTotalDisplay(e), tp = prev ? examTotalDisplay(prev) : null;
+  const rows = scoredEntries(e);
+  const type = EXAM_TYPES[e.type] || EXAM_TYPES.other;
+  const rate = t.full ? t.value / t.full : 0;
+  const mistakes = state.mistakes.filter(m => m.examId === e.id);
+
+  $('detail-title').textContent = e.name;
+  $('detail-body').innerHTML = `
+    <div class="detail-head">
+      <div class="big">${t.value}<small> / ${t.full}</small></div>
+      <div class="sub">${fmtDate(e.date)} · <span class="tag ${type.cls}">${type.name}</span> · 得分率 ${(rate * 100).toFixed(1)}%</div>
+    </div>
+    <div class="kv-grid">
+      <div class="kv rank-sensitive"><div class="k">班级排名</div><div class="v">${e.totalClassRank || '—'}</div></div>
+      <div class="kv rank-sensitive"><div class="k">年级排名</div><div class="v">${e.totalGradeRank || '—'}</div></div>
+      <div class="kv"><div class="k">较上次</div><div class="v" style="font-size:13.5px">${tp ? changeText(t.value, tp.value, false) : '—'}</div></div>
+      <div class="kv"><div class="k">参加科目</div><div class="v">${rows.length} 科</div></div>
+    </div>
+    <div class="section-label">各科明细</div>
+    <div class="subj-list">
+      ${rows.map(r => {
+    const pct = clamp(r.score / r.full * 100, 0, 100);
+    const color = pct >= 85 ? 'var(--ok)' : pct >= 70 ? 'var(--brand)' : pct >= 55 ? 'var(--accent)' : 'var(--danger)';
+    return `<div class="subj-line">
+          <span class="n">${esc(r.subject.name)}</span>
+          <span class="b"><i style="width:${pct}%;background:${color}"></i></span>
+          <span class="s">${r.score}<em>/${r.full}</em>
+            ${r.rec.classRank ? `<em class="rank-sensitive"> 班${r.rec.classRank}</em>` : ''}</span>
+        </div>`;
+  }).join('')}
+    </div>
+    ${e.note ? `<div class="section-label">备注</div><p style="font-size:13.5px;color:var(--ink-2)">${esc(e.note)}</p>` : ''}
+    ${mistakes.length ? `<div class="section-label">关联错题</div>
+      <p class="hint">本次考试记录了 ${mistakes.length} 道错题，可在「错题」页查看。</p>` : ''}`;
+  openModal('detail-modal');
+}
+
+function editCurrentExam() {
+  const id = currentExamId;
+  closeModal('detail-modal');
+  setTimeout(() => openExamModal(id), 120);
+}
+
+function deleteCurrentExam() {
+  const id = currentExamId;
+  showConfirm('删除后无法恢复，确定删除这场考试吗？', () => {
+    state.exams = state.exams.filter(e => e.id !== id);
+    state.mistakes.forEach(m => { if (m.examId === id) m.examId = ''; });
+    saveState();
+    closeModal('detail-modal');
+    renderAll();
+    toast('已删除');
+  }, true);
+}
+
+/* ---------------- 滚轮日期 ---------------- */
+let wheelState = { target: 'exam', y: 0, m: 0, d: 0 };
+const WHEEL_ITEM = 40;
+
+function openWheelPicker(target) {
+  wheelState.target = target || 'exam';
+  let base = todayISO();
+  if (wheelState.target === 'exam') base = $('exam-date').value || todayISO();
+  if (wheelState.target === 'nextExam') base = (state.settings.nextExam.date || todayISO());
+  const [y, m, d] = base.split('-').map(Number);
+  wheelState.y = y; wheelState.m = m; wheelState.d = d;
+  buildWheel('wheel-year', 2018, 2035, y, (v) => { wheelState.y = v; updateDays(); });
+  buildWheel('wheel-month', 1, 12, m, (v) => { wheelState.m = v; updateDays(); });
+  buildWheel('wheel-day', 1, daysInMonth(y, m), d, (v) => { wheelState.d = v; });
+  openModal('wheel-overlay');
+  $('wheel-overlay').classList.add('show');
+}
+
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+function buildWheel(elId, min, max, sel, onChange) {
+  const box = $(elId);
+  let html = '<div class="wheel-pad"></div>';
+  for (let v = min; v <= max; v++) {
+    html += `<div class="wheel-item ${v === sel ? 'on' : ''}" data-v="${v}">${v}</div>`;
+  }
+  html += '<div class="wheel-pad"></div>';
+  box.innerHTML = html;
+  box.scrollTop = 0;
+  const idx = sel - min;
+  setTimeout(() => { box.scrollTop = idx * WHEEL_ITEM; }, 0);
+
+  let t = null;
+  box.onscroll = () => {
+    clearTimeout(t);
+    const i = Math.round(box.scrollTop / WHEEL_ITEM);
+    box.querySelectorAll('.wheel-item').forEach((it, k) => it.classList.toggle('on', k === i));
+    t = setTimeout(() => {
+      const v = min + clamp(i, 0, max - min);
+      onChange(v);
+    }, 90);
+  };
+}
+
+function updateDays() {
+  const maxD = daysInMonth(wheelState.y, wheelState.m);
+  if (wheelState.d > maxD) wheelState.d = maxD;
+  buildWheel('wheel-day', 1, maxD, wheelState.d, (v) => { wheelState.d = v; });
+}
+
+function closeWheelPicker() { $('wheel-overlay').classList.remove('show'); }
+
+function confirmWheelDate() {
+  const iso = `${wheelState.y}-${String(wheelState.m).padStart(2, '0')}-${String(wheelState.d).padStart(2, '0')}`;
+  if (wheelState.target === 'exam') {
+    $('exam-date').value = iso;
+    $('exam-date-text').value = fmtDate(iso);
+  } else if (wheelState.target === 'nextExam') {
+    state.settings.nextExam.date = iso;
+    saveState(true);
+    renderSettings();
+    if (currentView === 'home') renderHome();
+    toast('已设置提醒日期');
+  }
+  closeWheelPicker();
+}
+
+/* ---------------- 学期管理 ---------------- */
+function openTermModal() { renderTermBody(); openModal('term-modal'); }
+
+function renderTermBody() {
+  const box = $('term-body');
+  box.innerHTML = `
+    <p class="hint" style="margin-bottom:12px">每个学期独立统计。归档旧学期不会删除数据，切换后首页只显示当前学期的考试。</p>
+    <div class="list">
+      ${state.terms.map(t => {
+    const n = examsInTerm(t.id).length;
+    const isActive = t.id === state.settings.activeTermId;
+    return `<div class="item" style="cursor:default">
+          <div class="body">
+            <div class="name">${esc(t.name)} ${isActive ? '<span class="badge-mini">当前</span>' : ''}</div>
+            <div class="meta">${n} 次考试 · ${fmtDate(t.startDate)} 起</div>
+          </div>
+          <div style="display:flex;gap:6px;flex:none">
+            ${isActive ? '' : `<button class="btn btn-outline btn-sm" onclick="setActiveTerm('${t.id}')">切换</button>`}
+            <button class="btn btn-ghost btn-sm" onclick="renameTerm('${t.id}')">改名</button>
+            ${n === 0 && state.terms.length > 1 ? `<button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteTerm('${t.id}')">删</button>` : ''}
+          </div>
+        </div>`;
+  }).join('')}
+    </div>`;
+}
+
+function setActiveTerm(id) {
+  state.settings.activeTermId = id;
+  saveState(true);
+  renderTermBody();
+  updateTermLabel();
+  renderAll();
+  toast('已切换到 ' + termById(id).name);
+}
+
+function renameTerm(id) {
+  const t = termById(id);
+  showPrompt('学期名称', t.name, (v) => {
+    t.name = v;
+    saveState(true);
+    renderTermBody();
+    updateTermLabel();
+  });
+}
+
+function deleteTerm(id) {
+  if (examsInTerm(id).length) { toast('该学期还有考试记录，不能删除'); return; }
+  showConfirm('删除这个空学期？', () => {
+    state.terms = state.terms.filter(t => t.id !== id);
+    if (state.settings.activeTermId === id) state.settings.activeTermId = state.terms[0].id;
+    saveState(true);
+    renderTermBody();
+    updateTermLabel();
+  }, true);
+}
+
+function quickAddTerm() {
+  const last = state.terms[state.terms.length - 1];
+  let name = '', startDate = '';
+  const m = last.name.match(/(\d{4})-(\d{4})\s*学年\s*·\s*(上|下)学期/);
+  if (m) {
+    const y0 = Number(m[1]);
+    if (m[3] === '上') { name = `${y0}-${y0 + 1} 学年 · 下学期`; startDate = `${y0 + 1}-02-01`; }
+    else { name = `${y0 + 1}-${y0 + 2} 学年 · 上学期`; startDate = `${y0 + 1}-09-01`; }
+  } else {
+    const g = guessTerm();
+    name = g.name; startDate = g.startDate;
+  }
+  showPrompt('新学期的名称', name, (v) => {
+    const t = { id: 't' + uid(), name: v, startDate, endDate: '' };
+    state.terms.push(t);
+    state.settings.activeTermId = t.id;
+    saveState(true);
+    renderTermBody();
+    renderAll();
+    toast('已新建并切换到 ' + v);
+  });
+}
+</script>
+<script>
+/* ============================================================
+   成绩单卡片（Canvas 绘制，纯本地，不上传）
+   ============================================================ */
+let shareDataURL = '';
+let shareExamId = '';
+
+function currentShareExam() {
+  if (shareExamId) {
+    const e = state.exams.find(x => x.id === shareExamId);
+    if (e) return e;
+  }
+  if (currentExamId) {
+    const e = state.exams.find(x => x.id === currentExamId);
+    if (e) return e;
+  }
+  const pool = sortExams(examsInTerm(state.settings.activeTermId));
+  return pool.length ? pool[pool.length - 1] : null;
+}
+
+function openShareCard(examId) {
+  shareExamId = examId || currentExamId || '';
+  const exam = currentShareExam();
+  if (!exam) { toast('先录入一场考试'); return; }
+  const url = drawShareCard(exam);
+  shareDataURL = url;
+  $('share-body').innerHTML = `
+    <img class="share-preview" src="${url}" alt="成绩单卡片">
+    <p class="hint" style="margin-top:10px;text-align:center">
+      点击「保存图片」；若没有反应，<b>长按上方图片选择「保存图像」</b>也可以。<br>
+      卡片由本机绘制，不含任何网络请求。
+    </p>`;
+  openModal('share-modal');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawShareCard(exam) {
+  const W = 1080, H = 1500;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const FONT = '"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",-apple-system,sans-serif';
+
+  // 背景
+  ctx.fillStyle = '#f4f6f9';
+  ctx.fillRect(0, 0, W, H);
+
+  // 顶部品牌区
+  const headH = 470;
+  const grad = ctx.createLinearGradient(0, 0, W, headH);
+  grad.addColorStop(0, '#1e3a5f');
+  grad.addColorStop(1, '#2c5282');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, headH);
+  // 装饰圆
+  ctx.fillStyle = 'rgba(255,255,255,.05)';
+  ctx.beginPath(); ctx.arc(W - 80, 60, 240, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(60, headH - 40, 150, 0, Math.PI * 2); ctx.fill();
+
+  const t = examTotalDisplay(exam);
+  const pool = examsInTerm(exam.termId);
+  const prev = prevExamOf(exam, pool);
+  const tp = prev ? examTotalDisplay(prev) : null;
+  const type = EXAM_TYPES[exam.type] || EXAM_TYPES.other;
+
+  ctx.fillStyle = 'rgba(255,255,255,.72)';
+  ctx.font = `500 26px ${FONT}`;
+  ctx.fillText('成绩追踪 · 成绩单', 70, 92);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = `700 46px ${FONT}`;
+  const nameLines = wrapText(ctx, exam.name, W - 140, 46);
+  let ty = 168;
+  nameLines.slice(0, 2).forEach(line => { ctx.fillText(line, 70, ty); ty += 56; });
+
+  ctx.fillStyle = 'rgba(255,255,255,.7)';
+  ctx.font = `400 26px ${FONT}`;
+  ctx.fillText(`${fmtDate(exam.date)}　·　${type.name}　·　${activeTermOf(exam).name}`, 70, ty + 6);
+
+  // 总分
+  ctx.fillStyle = '#fff';
+  ctx.font = `800 150px ${FONT}`;
+  const scoreStr = String(t.value);
+  ctx.fillText(scoreStr, 64, ty + 190);
+  const sw = ctx.measureText(scoreStr).width;
+  ctx.fillStyle = 'rgba(255,255,255,.65)';
+  ctx.font = `500 40px ${FONT}`;
+  ctx.fillText(`/ ${t.full}`, 64 + sw + 24, ty + 190);
+
+  // 变化 / 得分率
+  const rate = t.full ? (t.value / t.full * 100).toFixed(1) : '0';
+  ctx.font = `500 30px ${FONT}`;
+  ctx.fillStyle = 'rgba(255,255,255,.82)';
+  let badgeX = 70, badgeY = ty + 232;
+  ctx.fillText(`得分率 ${rate}%`, badgeX, badgeY);
+  if (tp) {
+    const d = round1(t.value - tp.value);
+    ctx.fillStyle = d >= 0 ? '#86efac' : '#fca5a5';
+    ctx.fillText(`${d >= 0 ? '↑ 较上次 +' : '↓ 较上次 '}${d}`, badgeX + 300, badgeY);
+  }
+
+  // 排名
+  if (exam.totalClassRank || exam.totalGradeRank) {
+    let rx = 70, ry = badgeY + 70;
+    const chips = [];
+    if (exam.totalClassRank) chips.push(`班级 ${exam.totalClassRank} 名`);
+    if (exam.totalGradeRank) chips.push(`年级 ${exam.totalGradeRank} 名`);
+    ctx.font = `600 28px ${FONT}`;
+    chips.forEach(text => {
+      const w = ctx.measureText(text).width + 48;
+      ctx.fillStyle = 'rgba(255,255,255,.14)';
+      roundRect(ctx, rx, ry - 40, w, 60, 30); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(text, rx + 24, ry);
+      rx += w + 14;
+    });
+  }
+
+  // 白色内容卡片
+  const cardX = 50, cardY = headH + 36, cardW = W - 100, cardH = H - cardY - 140;
+  ctx.save();
+  ctx.shadowColor = 'rgba(16,24,40,.10)';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 8;
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, cardX, cardY, cardW, cardH, 32);
+  ctx.fill();
+  ctx.restore();
+
+  // 各科
+  const rows = scoredEntries(exam);
+  const padX = cardX + 50;
+  let y = cardY + 76;
+  ctx.fillStyle = '#93a0b1';
+  ctx.font = `600 24px ${FONT}`;
+  ctx.fillText('各科成绩', padX, y);
+  ctx.textAlign = 'right';
+  ctx.fillText(`${rows.length} 科`, cardX + cardW - 50, y);
+  ctx.textAlign = 'left';
+  y += 34;
+
+  const rowH = Math.min(84, Math.floor((cardH - 130) / Math.max(rows.length, 1)));
+  rows.forEach(r => {
+    const pct = clamp(r.score / r.full, 0, 1);
+    ctx.fillStyle = '#151c27';
+    ctx.font = `600 30px ${FONT}`;
+    ctx.fillText(r.subject.name, padX, y + 26);
+
+    // 条形
+    const barX = padX + 170, barW = cardW - 170 - 210, barY = y + 8, barH = 18;
+    ctx.fillStyle = '#eef2f7';
+    roundRect(ctx, barX, barY, barW, barH, 9); ctx.fill();
+    const color = pct >= 0.85 ? '#059669' : pct >= 0.7 ? '#1e3a5f' : pct >= 0.55 ? '#d97706' : '#dc2626';
+    ctx.fillStyle = color;
+    roundRect(ctx, barX, barY, Math.max(4, barW * pct), barH, 9); ctx.fill();
+
+    ctx.fillStyle = '#151c27';
+    ctx.font = `700 30px ${FONT}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(String(r.score), cardX + cardW - 130, y + 26);
+    ctx.fillStyle = '#93a0b1';
+    ctx.font = `400 24px ${FONT}`;
+    ctx.fillText('/' + r.full, cardX + cardW - 50, y + 26);
+    ctx.textAlign = 'left';
+
+    y += rowH;
+  });
+
+  // 底部
+  ctx.fillStyle = '#93a0b1';
+  ctx.font = `400 24px ${FONT}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('数据仅保存在本机 · 由「成绩追踪」生成', W / 2, H - 70);
+  ctx.fillStyle = '#c3ccd8';
+  ctx.font = `400 20px ${FONT}`;
+  ctx.fillText(fmtDate(todayISO()), W / 2, H - 36);
+  ctx.textAlign = 'left';
+
+  return cv.toDataURL('image/png');
+}
+
+function activeTermOf(exam) {
+  return state.terms.find(t => t.id === exam.termId) || state.terms[0];
+}
+
+function wrapText(ctx, text, maxWidth, fontSize) {
+  const lines = [];
+  let cur = '';
+  for (const ch of String(text)) {
+    const test = cur + ch;
+    if (ctx.measureText(test).width > maxWidth && cur) { lines.push(cur); cur = ch; }
+    else cur = test;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function saveShareImage() {
+  if (!shareDataURL) return;
+  try {
+    if (window.AndroidBridge && AndroidBridge.saveImage) {
+      AndroidBridge.saveImage(shareDataURL, '成绩单_' + (currentShareExam() || {}).date + '.png');
+      toast('已保存到相册');
+      return;
+    }
+  } catch (e) { }
+  try {
+    const a = document.createElement('a');
+    a.href = shareDataURL;
+    a.download = '成绩单_' + todayISO() + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (e) { }
+  toast('若未开始下载，请长按图片保存');
+}
+</script>
+<script>
+/* ============================================================
+   错题本
+   ============================================================ */
+let mistakeFilter = { q: '', subject: 'all', status: 'all' };
+let editingMistakeId = null;
+
+function renderMistakesView() {
+  const box = $('mistakes-content');
+  const open = state.mistakes.filter(m => !m.mastered).length;
+
+  box.innerHTML = `
+    <div class="card" style="padding:12px 13px">
+      <input class="form-input" id="mk-search" placeholder="搜索题干 / 错因 / 标签" value="${esc(mistakeFilter.q)}"
+             oninput="mistakeFilter.q=this.value;renderMistakeList()">
+      <div class="chip-row" style="margin-top:9px">
+        <button class="chip ${mistakeFilter.status === 'all' ? 'on' : ''}" onclick="mistakeFilter.status='all';renderMistakesView()">全部</button>
+        <button class="chip ${mistakeFilter.status === 'open' ? 'on' : ''}" onclick="mistakeFilter.status='open';renderMistakesView()">未掌握 ${open ? '(' + open + ')' : ''}</button>
+        <button class="chip ${mistakeFilter.status === 'done' ? 'on' : ''}" onclick="mistakeFilter.status='done';renderMistakesView()">已掌握</button>
+      </div>
+      <div class="chip-row" style="margin-top:7px">
+        <button class="chip ${mistakeFilter.subject === 'all' ? 'on' : ''}" onclick="mistakeFilter.subject='all';renderMistakesView()">全科</button>
+        ${visibleSubjects().map(s => `<button class="chip ${mistakeFilter.subject === s.id ? 'on' : ''}"
+          onclick="mistakeFilter.subject='${s.id}';renderMistakesView()">${esc(s.name)}</button>`).join('')}
+      </div>
+    </div>
+    <div id="mistake-list"></div>
+    <div class="hint" style="text-align:center;margin:14px 0">共 ${state.mistakes.length} 条 · 未掌握 ${open} 条</div>`;
+  renderMistakeList();
+}
+
+function renderMistakeList() {
+  const box = $('mistake-list');
+  if (!box) return;
+  const list = state.mistakes.filter(m => {
+    if (mistakeFilter.subject !== 'all' && m.subjectId !== mistakeFilter.subject) return false;
+    if (mistakeFilter.status === 'open' && m.mastered) return false;
+    if (mistakeFilter.status === 'done' && !m.mastered) return false;
+    if (mistakeFilter.q) {
+      const hay = [m.title, m.reason, m.answer, (m.tags || []).join(' ')].join(' ').toLowerCase();
+      if (!hay.includes(mistakeFilter.q.toLowerCase())) return false;
+    }
+    return true;
+  }).sort((a, b) => (a.mastered - b.mastered) || String(b.date).localeCompare(String(a.date)));
+
+  box.innerHTML = list.length ? `<div class="list">
+      ${list.map(m => {
+    const subj = subjectById(m.subjectId);
+    const exam = state.exams.find(e => e.id === m.examId);
+    return `<div class="item" style="align-items:flex-start;cursor:pointer" onclick="openMistakeModal('${m.id}')">
+          <div class="body">
+            <div class="name" style="${m.mastered ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(m.title || '未命名错题')}</div>
+            <div class="meta">
+              <span class="tag">${esc(subj.name)}</span>
+              <span class="tag">${esc(m.reason || '未标注')}</span>
+              ${exam ? `<span>${esc(exam.name)}</span>` : ''}
+              <span>${fmtDate(m.date)}</span>
+            </div>
+            ${m.answer ? `<div class="hint" style="margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(m.answer)}</div>` : ''}
+            ${(m.tags && m.tags.length) ? `<div class="meta" style="margin-top:5px">${m.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join(' ')}</div>` : ''}
+          </div>
+          <button class="btn btn-ghost btn-sm" style="flex:none;color:${m.mastered ? 'var(--ok)' : 'var(--muted)'}"
+            onclick="event.stopPropagation();toggleMistake('${m.id}')">${m.mastered ? '✓' : '○'}</button>
+        </div>`;
+  }).join('')}
+    </div>` : `<div class="card"><div class="empty">
+        <b>${state.mistakes.length ? '没有符合条件的错题' : '错题本还是空的'}</b>
+        ${state.mistakes.length ? '换个筛选条件试试。' : '把每次考试的失分点记下来，比刷十套卷更有用。<br>点下方按钮开始。'}
+        <div style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="openMistakeModal()">记录错题</button></div>
+      </div></div>`;
+}
+
+function openMistakeModal(id) {
+  editingMistakeId = id || null;
+  const m = id ? state.mistakes.find(x => x.id === id) : null;
+  $('mistake-modal-title').textContent = m ? '编辑错题' : '记录错题';
+
+  $('mk-subject').innerHTML = visibleSubjects().map(s =>
+    `<option value="${s.id}" ${m && m.subjectId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+
+  const pool = sortExams(examsInTerm(state.settings.activeTermId)).reverse();
+  $('mk-exam').innerHTML = '<option value="">不关联</option>' + pool.map(e =>
+    `<option value="${e.id}" ${m && m.examId === e.id ? 'selected' : ''}>${esc(e.name)}</option>`).join('');
+
+  $('mk-title').value = m ? m.title : '';
+  $('mk-reason').value = m ? (m.reason || '概念不清') : '概念不清';
+  $('mk-answer').value = m ? (m.answer || '') : '';
+  $('mk-tags').value = m ? (m.tags || []).join(',') : '';
+  $('mk-mastered-chips').innerHTML = `
+    <button class="chip ${!m || !m.mastered ? 'on' : ''}" data-v="0" onclick="pickChip('mk-mastered-chips',this)">未掌握</button>
+    <button class="chip ${m && m.mastered ? 'on' : ''}" data-v="1" onclick="pickChip('mk-mastered-chips',this)">已掌握</button>`;
+
+  // 删除按钮
+  let footer = $('mistake-modal').querySelector('.modal-footer');
+  if (!footer.querySelector('.mk-del')) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-danger btn-sm mk-del';
+    btn.style.flex = '0 0 auto';
+    btn.textContent = '删除';
+    btn.onclick = () => deleteMistake(editingMistakeId);
+    footer.insertBefore(btn, footer.firstChild);
+  }
+  footer.querySelector('.mk-del').style.display = m ? 'inline-flex' : 'none';
+
+  openModal('mistake-modal');
+}
+
+function saveMistake() {
+  const title = $('mk-title').value.trim();
+  if (!title) { toast('请填写题目简述'); return; }
+  const payload = {
+    id: editingMistakeId || uid(),
+    subjectId: $('mk-subject').value,
+    examId: $('mk-exam').value,
+    title,
+    reason: $('mk-reason').value,
+    answer: $('mk-answer').value.trim(),
+    tags: $('mk-tags').value.split(/[,，\s]+/).map(t => t.trim()).filter(Boolean),
+    mastered: chipValue('mk-mastered-chips') === '1',
+    date: editingMistakeId ? (state.mistakes.find(m => m.id === editingMistakeId) || {}).date || todayISO() : todayISO()
+  };
+  if (editingMistakeId) {
+    const i = state.mistakes.findIndex(m => m.id === editingMistakeId);
+    if (i >= 0) state.mistakes[i] = payload;
+  } else {
+    state.mistakes.unshift(payload);
+  }
+  saveState();
+  closeModal('mistake-modal');
+  editingMistakeId = null;
+  toast('已保存');
+  if (currentView === 'mistakes') renderMistakesView();
+}
+
+function toggleMistake(id) {
+  const m = state.mistakes.find(x => x.id === id);
+  if (!m) return;
+  m.mastered = !m.mastered;
+  saveState(true);
+  renderMistakesView();
+  toast(m.mastered ? '标记为已掌握' : '已取消掌握标记');
+}
+
+function deleteMistake(id) {
+  if (!id) return;
+  showConfirm('删除这道错题？', () => {
+    state.mistakes = state.mistakes.filter(m => m.id !== id);
+    saveState();
+    closeModal('mistake-modal');
+    editingMistakeId = null;
+    renderMistakesView();
+    toast('已删除');
+  }, true);
+}
+</script>
+<script>
+/* ============================================================
+   设置 / 数据管理
+   ============================================================ */
+function renderSettings() {
+  const box = $('settings-content');
+  const s = state.settings;
+  const fullSum = visibleSubjects().reduce((a, b) => a + Number(b.fullScore || 0), 0);
+  const ds = s.dataSource || {};
+  const ne = s.nextExam || {};
+
+  box.innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>使用模式</span></div>
+      <div class="seg">
+        <button class="${s.viewMode !== 'parent' ? 'active' : ''}" onclick="setViewMode('student')">学生视图</button>
+        <button class="${s.viewMode === 'parent' ? 'active' : ''}" onclick="setViewMode('parent')">家长视图</button>
+      </div>
+      <p class="hint" style="margin-top:8px">家长视图会隐藏班级/年级排名，只保留趋势与目标达成度。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>外观</span></div>
+      <div class="seg">
+        <button class="${s.theme === 'auto' ? 'active' : ''}" onclick="setThemeMode('auto')">跟随系统</button>
+        <button class="${s.theme === 'light' ? 'active' : ''}" onclick="setThemeMode('light')">浅色</button>
+        <button class="${s.theme === 'dark' ? 'active' : ''}" onclick="setThemeMode('dark')">深色</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>计分方式</span></div>
+      <div class="seg">
+        <button class="${currentMode() === 'raw' ? 'active' : ''}" onclick="setScoreMode('raw')">原始总分</button>
+        <button class="${currentMode() === 'weighted' ? 'active' : ''}" onclick="setScoreMode('weighted')">加权总分</button>
+        <button class="${currentMode() === 'assigned' ? 'active' : ''}" onclick="setScoreMode('assigned')">赋分总分</button>
+      </div>
+      <p class="hint" style="margin-top:8px">加权总分 = Σ(分数 × 权重)；赋分总分会对开启了「赋分」的科目按得分率映射到赋分区间（默认 30–100），其余科目记原始分。均为本地估算。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>科目与目标</span>
+        <span class="t-right">满分合计 ${fullSum}</span></div>
+      <div class="btn-row" style="margin-bottom:12px">
+        <button class="btn btn-outline btn-sm btn-block" onclick="applyWeightPreset()">语数英 ×1.5</button>
+        <button class="btn btn-outline btn-sm btn-block" onclick="resetWeights()">权重归一</button>
+      </div>
+      ${state.subjects.map((sub, idx) => `
+        <div style="padding:11px 0;border-bottom:1px solid var(--line-2)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <b style="font-size:14px;${sub.hidden ? 'color:var(--muted)' : ''}">${esc(sub.name)}</b>
+            <div class="chip-row">
+              ${sub.elective ? `<button class="chip ${sub.assign ? 'on' : ''}" style="padding:2px 8px;font-size:11px" onclick="toggleSubject(${idx},'assign')">赋分</button>` : ''}
+              <button class="chip ${sub.hidden ? 'on' : ''}" style="padding:2px 8px;font-size:11px" onclick="toggleSubject(${idx},'hidden')">${sub.hidden ? '已隐藏' : '显示中'}</button>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:8px">
+            <div class="form-group" style="margin:0"><label class="form-label" style="font-size:10.5px">满分</label>
+              <input type="number" inputmode="numeric" class="form-input" style="height:36px" value="${sub.fullScore}"
+                onchange="updateSubject(${idx},'fullScore',this.value)"></div>
+            <div class="form-group" style="margin:0"><label class="form-label" style="font-size:10.5px">目标分</label>
+              <input type="number" inputmode="numeric" class="form-input" style="height:36px" value="${sub.targetScore || ''}" placeholder="不设"
+                onchange="updateSubject(${idx},'targetScore',this.value)"></div>
+            <div class="form-group" style="margin:0"><label class="form-label" style="font-size:10.5px">权重</label>
+              <input type="number" inputmode="decimal" step="0.1" class="form-input" style="height:36px" value="${sub.weight || 1}"
+                onchange="updateSubject(${idx},'weight',this.value)"></div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>下一场考试</span></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1.4"><label class="form-label">名称</label>
+          <input class="form-input" id="ne-name" placeholder="如：期中考试" value="${esc(ne.name || '')}"
+                 onchange="state.settings.nextExam.name=this.value;saveState(true);if(currentView==='home')renderHome()"></div>
+        <div class="form-group" style="flex:1"><label class="form-label">日期</label>
+          <input class="form-input" readonly placeholder="选择" value="${ne.date ? fmtDate(ne.date) : ''}"
+                 onclick="openWheelPicker('nextExam')"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">提前提醒</label>
+          <select class="form-input" onchange="state.settings.remindDays=Number(this.value);saveState(true)">
+            ${[3, 7, 14, 30].map(d => `<option value="${d}" ${Number(s.remindDays) === d ? 'selected' : ''}>${d} 天</option>`).join('')}
+          </select></div>
+        <div class="form-group" style="display:flex;align-items:flex-end">
+          <button class="btn btn-outline btn-block" onclick="testNotification()">测试提醒</button></div>
+      </div>
+      <p class="hint">应用内会在到期前显示提醒条。系统通知需要 Android 端提供通知桥（见 android_patch 说明）。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>学期</span>
+        <span class="t-right" onclick="openTermModal()" style="cursor:pointer">管理 ›</span></div>
+      <p class="hint">当前：<b style="color:var(--ink)">${esc(activeTerm().name)}</b> · 共 ${examsInTerm(activeTerm().id).length} 次考试</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>数据管理</span></div>
+      <div class="btn-row" style="margin-bottom:9px">
+        <button class="btn btn-outline btn-sm btn-block" onclick="exportAppData()">导出备份</button>
+        <button class="btn btn-outline btn-sm btn-block" onclick="triggerFileImport('app')">导入备份</button>
+      </div>
+      <div class="btn-row" style="margin-bottom:9px">
+        <button class="btn btn-outline btn-sm btn-block" onclick="exportCSV()">导出成绩表</button>
+        <button class="btn btn-outline btn-sm btn-block" onclick="pasteExamCSV()">从表格导入</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-danger btn-sm btn-block" onclick="clearAllData()">清空所有数据</button>
+      </div>
+      <p class="hint" style="margin-top:9px">
+        每天会自动在本机保留 3 份快照；导出时会优先调用原生保存，若当前安装包没有对应能力，会弹出文本框供你手动复制保存。
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>分数线数据</span>
+        <span class="t-right" onclick="openDataModal()" style="cursor:pointer">管理 ›</span></div>
+      <p class="hint">${state.scoreData
+      ? `已加载 ${esc(state.scoreData.province || '')} ${state.scoreData.year || ''} · ${state.scoreData.segments.length} 个分段 · 来源 ${state.scoreData.source === 'demo' ? '示例数据' : state.scoreData.source === 'remote' ? '在线更新' : '本地导入'}`
+      : '未加载。可用于「分数 → 位次」换算。'}
+      </p>
+      <p class="hint" style="margin-top:6px">数据源：${ds.url ? esc(ds.url) : '未配置'}${ds.auto ? '（自动检查已开启）' : ''}</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="t-left"><i class="dot"></i>关于</span></div>
+      <p class="hint">成绩追踪 v2.0（前端）· 数据只保存在本机<br>
+        本应用不申请网络权限时，任何数据都无法离开设备。成绩单卡片、图表、换算全部在本地完成。</p>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-outline btn-sm btn-block" onclick="loadDemoData()">载入示例数据</button>
+        <button class="btn btn-outline btn-sm btn-block" onclick="showDoc()">使用说明</button>
+      </div>
+    </div>`;
+}
+
+function setViewMode(mode) {
+  state.settings.viewMode = mode;
+  saveState(true);
+  applyParentMode();
+  renderSettings();
+  toast(mode === 'parent' ? '已切换为家长视图' : '已切换为学生视图');
+}
+
+function setThemeMode(mode) {
+  state.settings.theme = mode;
+  saveState(true);
+  applyTheme();
+  renderSettings();
+}
+
+function setScoreMode(mode) {
+  state.settings.scoreMode = mode;
+  saveState(true);
+  renderSettings();
+  toast('计分方式：' + ({ raw: '原始总分', weighted: '加权总分', assigned: '赋分总分' }[mode]));
+}
+
+function updateSubject(idx, field, value) {
+  const sub = state.subjects[idx];
+  if (!sub) return;
+  if (field === 'fullScore') sub.fullScore = Number(value) || 100;
+  else if (field === 'targetScore') sub.targetScore = value === '' ? null : Number(value);
+  else if (field === 'weight') sub.weight = Number(value) > 0 ? Number(value) : 1;
+  saveState(true);
+  if ($('settings-content').querySelector('.card-title .t-right')) {
+    const fullSum = visibleSubjects().reduce((a, b) => a + Number(b.fullScore || 0), 0);
+    // 轻量更新合计，避免整页重绘打断输入
+    const el = $('settings-content').querySelector('.card-title .t-right');
+    if (el && /满分合计/.test(el.textContent)) el.textContent = '满分合计 ' + fullSum;
+  }
+}
+
+function toggleSubject(idx, field) {
+  const sub = state.subjects[idx];
+  if (!sub) return;
+  sub[field] = !sub[field];
+  saveState(true);
+  renderSettings();
+  if (currentView === 'home') renderHome();
+}
+
+function applyWeightPreset() {
+  state.subjects.forEach(s => {
+    s.weight = ['chinese', 'math', 'english'].includes(s.id) ? 1.5 : 1;
+  });
+  saveState(true);
+  renderSettings();
+  toast('已按语数英 ×1.5 设置权重');
+}
+
+function resetWeights() {
+  state.subjects.forEach(s => s.weight = 1);
+  saveState(true);
+  renderSettings();
+  toast('所有科目权重已设为 1');
+}
+
+/* ---------------- 导入导出 ---------------- */
+function downloadText(filename, text, mime) {
+  try {
+    const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return true;
+  } catch (e) { return false; }
+}
+
+function showTextOutput(title, filename, text, mime) {
+  $('dialog-message').innerHTML = `
+    <div style="font-size:15px;font-weight:650;margin-bottom:6px">${esc(title)}</div>
+    <div class="hint" style="text-align:left;margin-bottom:8px">点文本框可全选复制；也可以点「下载」尝试保存为文件。</div>
+    <textarea class="form-input" id="out-text" style="height:150px;font-size:12px;text-align:left"
+      onclick="this.select()">${esc(text)}</textarea>`;
+  $('dialog-actions').innerHTML = `
+    <button class="btn btn-outline btn-block" id="dlg-cancel">关闭</button>
+    <button class="btn btn-primary btn-block" id="dlg-ok">下载</button>`;
+  $('dialog-overlay').classList.add('show');
+  $('dlg-cancel').onclick = () => $('dialog-overlay').classList.remove('show');
+  $('dlg-ok').onclick = () => {
+    const ok = downloadText(filename, text, mime);
+    toast(ok ? '已开始下载' : '下载失败，请手动复制');
+  };
+}
+
+function exportAppData() {
+  const json = JSON.stringify(state, null, 2);
+  const name = `成绩追踪备份_${todayISO()}.json`;
+  if (window.AndroidBridge && AndroidBridge.saveFile) {
+    try { AndroidBridge.saveFile(name, json, 'application/json'); toast('已保存：' + name); return; } catch (e) { }
+  }
+  showTextOutput('备份数据（' + name + '）', name, json, 'application/json');
+}
+
+function csvCell(v) {
+  const s = String(v == null ? '' : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function exportCSV() {
+  const subs = visibleSubjects();
+  const head = ['日期', '学期', '考试名称', '类型', '总分', ...subs.map(s => s.name), '班排', '年排', '备注'];
+  const rows = sortExams(state.exams).map(e => {
+    const t = examTotalDisplay(e);
+    return [e.date, (state.terms.find(x => x.id === e.termId) || {}).name || '', e.name,
+    (EXAM_TYPES[e.type] || {}).name || '', t.value,
+    ...subs.map(s => { const r = e.scores[s.id]; return r && r.score != null ? r.score : ''; }),
+    e.totalClassRank || '', e.totalGradeRank || '', e.note || ''];
+  });
+  const csv = '\ufeff' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n');
+  const name = `成绩明细_${todayISO()}.csv`;
+  if (window.AndroidBridge && AndroidBridge.saveFile) {
+    try { AndroidBridge.saveFile(name, csv, 'text/csv'); toast('已保存：' + name); return; } catch (e) { }
+  }
+  showTextOutput('成绩表（' + name + '）', name, csv, 'text/csv');
+}
+
+function importAppData(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { showAlert('不是有效的 JSON 文件'); return; }
+  if (!data || !Array.isArray(data.exams) || !Array.isArray(data.subjects)) {
+    showAlert('文件格式不正确：缺少 subjects / exams');
+    return;
+  }
+  showConfirm(`导入将覆盖当前 ${state.exams.length} 条考试记录，确定继续？`, () => {
+    const merged = mergeState(defaultState(), data);
+    state = merged;
+    saveState();
+    applyParentMode();
+    applyTheme();
+    updateTermLabel();
+    renderAll();
+    showAlert('导入成功：' + state.exams.length + ' 次考试、' + state.mistakes.length + ' 道错题');
+  }, true);
+}
+
+function pasteExamCSV() {
+  $('dialog-message').innerHTML = `
+    <div style="font-size:15px;font-weight:650;margin-bottom:6px">从表格导入成绩</div>
+    <div class="hint" style="text-align:left;margin-bottom:8px">
+      支持从 Excel / WPS 直接复制粘贴（制表符）或 CSV。表头需包含：<br>
+      <code>日期, 考试名称, 科目, 分数</code>（可选：满分、班排、年排）<br>
+      同一天同一名称的多行会合并成一场考试。
+    </div>
+    <textarea class="form-input" id="csv-input" style="height:170px;font-size:12px;text-align:left"
+      placeholder="日期	考试名称	科目	分数	满分&#10;2026-10-15	第一次月考	语文	118	150&#10;2026-10-15	第一次月考	数学	132	150"></textarea>`;
+  $('dialog-actions').innerHTML = `
+    <button class="btn btn-outline btn-block" id="dlg-cancel">取消</button>
+    <button class="btn btn-primary btn-block" id="dlg-ok">导入</button>`;
+  $('dialog-overlay').classList.add('show');
+  $('dlg-cancel').onclick = () => $('dialog-overlay').classList.remove('show');
+  $('dlg-ok').onclick = () => {
+    const text = $('csv-input').value;
+    $('dialog-overlay').classList.remove('show');
+    try {
+      const res = importExamTable(text);
+      toast(`已导入 ${res.exams} 场考试 / ${res.rows} 条成绩`);
+      renderAll();
+    } catch (err) {
+      showAlert('导入失败：' + err.message);
+    }
+  };
+}
+
+function importExamTable(text) {
+  const lines = String(text).split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) throw new Error('至少需要表头和一行数据');
+  const split = (l) => l.split(/\t|,|，/).map(c => c.trim().replace(/^"|"$/g, ''));
+  const head = split(lines[0]);
+  const idxOf = (names) => head.findIndex(h => names.some(n => h.includes(n)));
+  const iDate = idxOf(['日期', 'date']);
+  const iName = idxOf(['考试', '名称', 'name']);
+  const iSubj = idxOf(['科目', '学科', 'subject']);
+  const iScore = idxOf(['分数', '得分', 'score']);
+  const iFull = idxOf(['满分', 'full']);
+  const iClass = idxOf(['班排', '班级排名']);
+  const iGrade = idxOf(['年排', '年级排名']);
+  if ([iDate, iName, iSubj, iScore].some(i => i < 0)) throw new Error('表头缺少 日期/考试名称/科目/分数');
+
+  const groups = {};
+  let rows = 0;
+  for (let i = 1; i < lines.length; i++) {
+    const c = split(lines[i]);
+    if (!c[iDate] || !c[iSubj]) continue;
+    const date = normalizeDateStr(c[iDate]);
+    const name = c[iName] || '导入的考试';
+    const subjName = c[iSubj];
+    const sub = state.subjects.find(s => s.name === subjName) ||
+      state.subjects.find(s => s.name.includes(subjName) || subjName.includes(s.name));
+    if (!sub) continue;
+    const score = Number(String(c[iScore]).replace(/[^\d.]/g, ''));
+    if (isNaN(score)) continue;
+    const key = date + '|' + name;
+    if (!groups[key]) groups[key] = { date, name, scores: {} };
+    groups[key].scores[sub.id] = {
+      score,
+      fullScore: iFull >= 0 && c[iFull] ? Number(c[iFull]) : sub.fullScore,
+      classRank: iClass >= 0 && c[iClass] ? Number(c[iClass]) : null,
+      gradeRank: iGrade >= 0 && c[iGrade] ? Number(c[iGrade]) : null
+    };
+    rows++;
+  }
+  const keys = Object.keys(groups);
+  if (!keys.length) throw new Error('没有识别到有效数据行');
+
+  const termId = state.settings.activeTermId;
+  keys.forEach(k => {
+    const g = groups[k];
+    const exist = state.exams.find(e => e.date === g.date && e.name === g.name);
+    if (exist) Object.assign(exist.scores, g.scores);
+    else state.exams.push({
+      id: uid(), name: g.name, date: g.date, type: 'other', termId,
+      totalClassRank: null, totalGradeRank: null, note: '表格导入', scores: g.scores
+    });
+  });
+  saveState();
+  return { exams: keys.length, rows };
+}
+
+function normalizeDateStr(v) {
+  const s = String(v).replace(/[./]/g, '-').trim();
+  const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+  const d = new Date(s);
+  if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return todayISO();
+}
+
+function clearAllData() {
+  showConfirm('将删除本机全部成绩、错题与设置，且无法恢复。\n确定清空？', () => {
+    try { localStorage.removeItem(STORE_KEY); } catch (e) { }
+    state = defaultState();
+    saveState();
+    applyParentMode();
+    applyTheme();
+    updateTermLabel();
+    renderAll();
+    showAlert('已清空');
+  }, true);
+}
+
+function testNotification() {
+  try {
+    if (window.AndroidBridge && AndroidBridge.notify) {
+      AndroidBridge.notify('成绩追踪', '通知已开启，考试前会提醒你');
+      toast('已发送测试通知');
+      return;
+    }
+  } catch (e) { }
+  toast('当前安装包无通知桥接，仅在应用内提醒');
+}
+
+function showDoc() {
+  showAlert(
+    '【成绩】录入每次考试的分数与排名，留空的科目视为未考。\n\n' +
+    '【分析】趋势看分数与名次走向；强弱用 Z 分数找出相对短板；位次需要用一分一段表换算。\n\n' +
+    '【错题】按科目/错因归档，可标记已掌握。\n\n' +
+    '【数据】每天自动留 3 份快照；建议定期导出备份。导出时若无下载反应，会弹出文本框供手动复制。'
+  );
+}
+
+function loadDemoData() {
+  if (state.exams.length) {
+    showConfirm('当前已有数据，示例数据会被追加到本学期，确定继续？', () => { injectDemo(); });
+  } else injectDemo();
+}
+
+function injectDemo() {
+  const termId = state.settings.activeTermId;
+  const now = new Date();
+  const names = ['开学摸底考', '第一次月考', '期中考试', '第二次月考'];
+  const base = { chinese: 96, math: 102, english: 108, physics: 68, chemistry: 70, biology: 72, politics: 66, history: 68, geography: 70 };
+  const step = { chinese: 3, math: 5, english: 2, physics: 3, chemistry: 2, biology: 2, politics: 3, history: 2, geography: 2 };
+  names.forEach((n, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (3 - i), 12);
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const scores = {};
+    visibleSubjects().forEach(s => {
+      const jitter = Math.round((Math.random() - 0.45) * 8);
+      const val = clamp((base[s.id] || 70) + (step[s.id] || 2) * i + jitter, 40, s.fullScore);
+      scores[s.id] = { score: val, fullScore: s.fullScore, classRank: null, gradeRank: null };
+    });
+    state.exams.push({
+      id: uid(), name: n, date, type: i === 2 ? 'midterm' : 'monthly', termId,
+      totalClassRank: 18 - i * 2, totalGradeRank: 210 - i * 12, note: '示例数据', scores
+    });
+  });
+  if (!state.mistakes.length) {
+    state.mistakes.push({
+      id: uid(), subjectId: 'math', examId: '', title: '导数第二问：极值点偏移构造', reason: '方法不会',
+      answer: '先移项构造对称函数，再用单调性证明；注意端点代入验证。', tags: ['导数', '压轴'],
+      mastered: false, date: todayISO()
+    });
+  }
+  saveState();
+  renderAll();
+  toast('已载入示例数据，可随时清空');
+}
+</script>
+<script>
+/* ============================================================
+   启动
+   ============================================================ */
+function init() {
+  loadState();
+  applyParentMode();
+  applyTheme();
+  updateTermLabel();
+  switchView('home');
+
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => { if ((state.settings.theme || 'auto') === 'auto') applyTheme(); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
+
+  // 首页返回键：单页无路由，交给页面处理（原生 patch 会调用）
+  window.appHandleBack = function () {
+    const openOverlay = document.querySelector('.modal-overlay.show, .dialog-overlay.show, .wheel-overlay.show');
+    if (openOverlay) { openOverlay.classList.remove('show'); return true; }
+    if (currentView !== 'home') { switchView('home'); return true; }
+    return false;
+  };
+
+  // 节流后的静默检查（仅在配置了数据源时）
+  setTimeout(autoCheckScoreData, 1600);
+}
+
+function boot() {
+  if (window.__appInited) return;
+  window.__appInited = true;
+  init();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+</script>
+</body>
+</html>
