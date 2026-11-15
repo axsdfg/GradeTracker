@@ -9,6 +9,7 @@
 不用注册 · 不联网 · 无埋点 · 数据只存在你自己的手机里
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2c5282.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/axsdfg/GradeTracker?label=release&color=d97706)](https://github.com/axsdfg/GradeTracker/releases/latest)
 [![Platform](https://img.shields.io/badge/Android-7.0%2B-3ddc84.svg)](#系统要求)
 [![Network](https://img.shields.io/badge/network-none%20(offline--first)-059669.svg)](docs/PRIVACY.md)
 [![Tests](https://img.shields.io/badge/regression-34%20steps%20passing-059669.svg)](test/)
@@ -117,31 +118,15 @@
 
 ## 快速开始
 
-### 前置：ECharts
+### 方式一：直接下载安装包
 
-仓库**不包含** `echarts.min.js`（1 MB 的第三方压缩代码，通过 CDN 获取更合适）。首次运行前执行一次：
+[**下载 GradeTracker_v2.0.0.apk**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.35 MiB · Android 7.0+
 
-```bash
-node scripts/fetch-vendor.js        # 下载 ECharts 5.6.0 到 app/echarts.min.js
-```
+首次安装需要在系统里允许"安装未知来源应用"。这个包用**调试证书**签名，适合自己装来用，不建议作为正式分发版本——要长期维护升级请用正式密钥自行构建（见方式三）。
 
-或者手动下载 [echarts@5.6.0/dist/echarts.min.js](https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js)，保存为 `app/echarts.min.js`。
+> 与旧版同签名，覆盖安装不会清除已有成绩。校验值见 [Releases](https://github.com/axsdfg/GradeTracker/releases) 页面。
 
-> 只用到了 `line / bar / radar / tooltip`。要更小的体积，可用 ECharts 官方在线定制构建，能压到约 300 KB，启动渲染大约快一倍。
-
-### 方式一：直接在浏览器里跑（最快）
-
-```bash
-node scripts/fetch-vendor.js
-node scripts/build-preview.js      # 生成 dist/preview.html（把 ECharts 内联成单文件）
-# 双击 dist/preview.html 即可
-```
-
-也可以直接打开 `app/index.html`（需要 `app/echarts.min.js` 在同目录）。
-
-> 浏览器的 `localStorage` 按域名隔离，`file://` 与 `http://localhost` 的数据互不相通，调试时注意。
-
-### 方式二：打包成可安装的 APK
+### 方式二：打包成可安装的 APK（自己构建）
 
 需要一个**已存在的 APK**（作为壳）+ JDK 17：
 
@@ -168,6 +153,30 @@ webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
 ```
 
 原生壳的完整参考实现（14 KB，含文件选择、下载、保存图片、通知、返回键）见 **[android/MainActivity.java](android/MainActivity.java)**，清单改动与权限说明见 **[docs/ANDROID-INTEGRATION.md](docs/ANDROID-INTEGRATION.md)**。
+
+### 方式四：直接在浏览器里跑（开发调试）
+
+```bash
+node scripts/fetch-vendor.js
+node scripts/build-preview.js      # 生成 dist/preview.html（把 ECharts 内联成单文件）
+# 双击 dist/preview.html 即可
+```
+
+也可以直接打开 `app/index.html`（需要 `app/echarts.min.js` 在同目录）。
+
+> 浏览器的 `localStorage` 按域名隔离，`file://` 与 `http://localhost` 的数据互不相通，调试时注意。
+
+### 依赖：ECharts
+
+仓库**不包含** `echarts.min.js`（1 MB 的第三方压缩代码，通过 CDN 获取更合适）。首次运行前执行一次：
+
+```bash
+node scripts/fetch-vendor.js        # 下载 ECharts 5.6.0 到 app/echarts.min.js
+```
+
+或者手动下载 [echarts@5.6.0/dist/echarts.min.js](https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js)，保存为 `app/echarts.min.js`。
+
+> 只用到了 `line / bar / radar / tooltip`。要更小的体积，可用 ECharts 官方在线定制构建，能压到约 300 KB，启动渲染大约快一倍。
 
 ### 系统要求
 
