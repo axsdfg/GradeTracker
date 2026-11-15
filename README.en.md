@@ -125,7 +125,7 @@ Five bottom tabs, all inside the same HTML and switched by `switchView()`:
 
 ### Option 1: Download the APK
 
-[**Download GradeTracker_v2.0.0.apk**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.35 MiB · Android 7.0+
+[**Download the latest APK**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.37 MiB · Android 7.0+ · six UI languages
 
 The first install asks the system to allow apps from unknown sources. This build is signed with a **debug certificate** — fine for installing on your own phone, but not recommended as an official distribution. For long-term maintenance, build it yourself with a release key (see Option 3).
 

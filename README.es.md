@@ -127,7 +127,7 @@ Cinco pestañas inferiores, todas dentro del mismo HTML y conmutadas por `switch
 
 ### Opción 1: descargar el APK
 
-[**Descargar GradeTracker_v2.0.0.apk**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3,35 MiB · Android 7.0+
+[**Descargar el APK más reciente**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3,37 MiB · Android 7.0+ · seis idiomas de interfaz
 
 La primera instalación requiere permitir «aplicaciones de origen desconocido». Este paquete está firmado con un **certificado de depuración**: sirve para instalarlo en tu propio teléfono, pero no se recomienda como distribución oficial. Para mantenerlo a largo plazo, compílalo tú mismo con una clave de publicación (opción 3).
 

@@ -127,7 +127,7 @@
 
 ### 方法 1：APK をダウンロードする
 
-[**GradeTracker_v2.0.0.apk をダウンロード**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.35 MiB · Android 7.0 以上
+[**最新版 APK をダウンロード**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.37 MiB · Android 7.0 以上 · UI は 6 言語対応
 
 初回インストール時は「提供元不明のアプリ」を許可する必要があります。このパッケージは**デバッグ証明書**で署名されているため、自分で使う分には問題ありませんが、正式な配布物としては推奨しません。長期運用するなら正式な鍵で自分でビルドしてください（方法 3）。
 

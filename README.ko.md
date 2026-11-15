@@ -127,7 +127,7 @@
 
 ### 방법 1: APK 내려받기
 
-[**GradeTracker_v2.0.0.apk 내려받기**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.35 MiB · Android 7.0 이상
+[**최신 APK 내려받기**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.37 MiB · Android 7.0 이상 · UI 6개 언어 지원
 
 처음 설치할 때 시스템에서 "출처를 알 수 없는 앱" 허용이 필요합니다. 이 패키지는 **디버그 인증서**로 서명되어 있어 직접 설치해 쓰기에는 적합하지만, 공식 배포본으로는 권장하지 않습니다. 장기적으로 관리하려면 정식 키로 직접 빌드하세요(방법 3).
 

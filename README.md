@@ -123,7 +123,7 @@
 
 ### 方式一：直接下载安装包
 
-[**下载 GradeTracker_v2.0.0.apk**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.35 MiB · Android 7.0+
+[**下载最新版 APK**](https://github.com/axsdfg/GradeTracker/releases/latest) · 3.37 MiB · Android 7.0+ · 支持界面六种语言
 
 首次安装需要在系统里允许"安装未知来源应用"。这个包用**调试证书**签名，适合自己装来用，不建议作为正式分发版本——要长期维护升级请用正式密钥自行构建（见方式三）。
 
