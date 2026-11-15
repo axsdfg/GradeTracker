@@ -8,6 +8,8 @@
 
 不用注册 · 不联网 · 无埋点 · 数据只存在你自己的手机里
 
+<sub>**简体中文** · [English](README.en.md)</sub>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-2c5282.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/axsdfg/GradeTracker?label=release&color=d97706)](https://github.com/axsdfg/GradeTracker/releases/latest)
 [![CI](https://github.com/axsdfg/GradeTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/axsdfg/GradeTracker/actions/workflows/ci.yml)
@@ -38,7 +40,6 @@
 - [参与贡献](#参与贡献)
 - [许可证](#许可证)
 - [English](#english)
-
 ---
 
 ## 这是什么
@@ -389,3 +390,5 @@ Highlights:
 Quick start: `node scripts/fetch-vendor.js`, then open `app/index.html`. Docs are in Chinese under `docs/`; issues and PRs in either language are welcome.
 
 Licensed under the [MIT License](LICENSE).
+
+**[→ Full English edition: README.en.md](README.en.md)**
