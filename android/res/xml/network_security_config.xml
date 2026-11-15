@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  只允许 HTTPS。如果确实需要访问某个自建数据源，把域名加进下面的 domain-config。
+
+  ⚠️ 不要把 cleartextTrafficPermitted 改成 true：那会让页面可以访问任意 HTTP 地址，
+     与"零明文传输"的设计目标冲突。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- 示例：你的分数线数据源
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">your-data-host.example.com</domain>
+        <pin-set expiration="2027-12-31">
+            <pin digest="SHA-256">REPLACE_WITH_BASE64_PIN=</pin>
+        </pin-set>
+    </domain-config>
+    -->
+</network-security-config>
