@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APK 静态分析报告 · 成绩追踪 (com.gradetracker.app)</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1a202c; --ink2:#4a5568; --muted:#8a94a6;
+    --line:#e5e9f0; --brand:#1e3a5f; --accent:#d97706;
+    --red:#c53030; --redbg:#fff5f5; --amber:#b7791f; --amberbg:#fffbf0;
+    --green:#276749; --greenbg:#f0fdf4; --blue:#2b6cb0; --bluebg:#eff6ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.65;font-size:15px;}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 64px}
+  header.hero{background:var(--brand);color:#fff;border-radius:16px;padding:28px 30px;margin-bottom:22px}
+  .hero .kicker{font-size:12px;letter-spacing:2px;opacity:.65;text-transform:uppercase}
+  .hero h1{margin:6px 0 4px;font-size:26px;line-height:1.3}
+  .hero .sub{opacity:.8;font-size:14px}
+  .badges{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+    padding:4px 10px;border-radius:20px;font-size:12px}
+  .badge.warn{background:rgba(217,119,6,.28);border-color:rgba(255,196,105,.5)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px}
+  h2{font-size:17px;margin:0 0 14px;padding-left:11px;border-left:4px solid var(--accent);line-height:1.2}
+  h3{font-size:14.5px;margin:18px 0 8px;color:var(--ink2)}
+  p{margin:8px 0}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;background:#fafbfc}
+  td.k{color:var(--ink2);width:32%;white-space:nowrap}
+  code,.mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:12.5px}
+  code{background:#f1f3f7;padding:1.5px 5px;border-radius:4px;color:#233}
+  pre{background:#1d2430;color:#dfe6f0;padding:16px;border-radius:10px;overflow-x:auto;
+    font-family:"SFMono-Regular",Consolas,monospace;font-size:12.5px;line-height:1.6}
+  pre .c{color:#7c8798}
+  pre .s{color:#ffd479}
+  pre .m{color:#7fd1ff}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .kpi{background:#fafbfc;border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+  .kpi .t{font-size:12px;color:var(--muted)}
+  .kpi .v{font-size:16px;font-weight:700;margin-top:2px;color:var(--brand)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .p-red{background:var(--redbg);color:var(--red)}
+  .p-amber{background:var(--amberbg);color:var(--amber)}
+  .p-green{background:var(--greenbg);color:var(--green)}
+  .p-blue{background:var(--bluebg);color:var(--blue)}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:5px 0}
+  .note{border-left:3px solid var(--blue);background:var(--bluebg);padding:12px 16px;border-radius:0 8px 8px 0;font-size:13.5px;margin:14px 0}
+  .warnbox{border-left:3px solid var(--amber);background:var(--amberbg);padding:12px 16px;border-radius:0 8px 8px 0;font-size:13.5px;margin:14px 0}
+  .okbox{border-left:3px solid var(--green);background:var(--greenbg);padding:12px 16px;border-radius:0 8px 8px 0;font-size:13.5px;margin:14px 0}
+  footer{color:var(--muted);font-size:12.5px;text-align:center;margin-top:26px;line-height:1.8}
+  .verdict{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .verdict .score{width:96px;height:96px;border-radius:50%;background:var(--greenbg);
+    border:2px solid #c6f6d5;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+  .verdict .score b{font-size:24px;color:var(--green);line-height:1}
+  .verdict .score span{font-size:11px;color:var(--green);opacity:.8;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Android APK · Static Analysis</div>
+  <h1>「成绩追踪」APK 静态分析报告</h1>
+  <div class="sub mono">GradeTracker_v1.3.apk &nbsp;·&nbsp; com.gradetracker.app &nbsp;·&nbsp; v1.3 (3)</div>
+  <div class="badges">
+    <span class="badge">判定：低风险离线工具</span>
+    <span class="badge">无网络权限</span>
+    <span class="badge">无第三方 SDK</span>
+    <span class="badge warn">调试签名 / debuggable</span>
+  </div>
+</header>
+
+<div class="card">
+  <h2>一句话结论</h2>
+  <div class="verdict">
+    <div class="score"><b>低</b><span>风险等级</span></div>
+    <div style="flex:1;min-width:260px">
+      <p>这是一个 <b>纯本地离线的学生成绩记录工具</b>：单个 WebView 外壳 + 一个 67&nbsp;KB 的 HTML 单页应用 + ECharts 图表库，数据只写在本机 <code>localStorage</code> 里。</p>
+      <p>未发现任何恶意行为：<b>没有 INTERNET 权限</b>（物理上无法联网回传）、没有原生库、没有 JS 桥、没有广告/统计/推送 SDK、代码未混淆无加密载荷。</p>
+      <p>它的问题集中在「工程规范」而不是「恶意」：<b>用 Android 默认调试证书签名、<code>debuggable=true</code>、<code>allowBackup=true</code></b>，属于典型的<b>自建/内测包</b>，不适合上架，也不适合把重要数据长期寄存在里面（导出功能大概率失效）。</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>1. 文件与构建信息</h2>
+  <table>
+    <tr><td class="k">文件名</td><td class="mono">GradeTracker_v1.3.apk</td></tr>
+    <tr><td class="k">大小</td><td>3,487,447 字节（3.33 MiB），共 399 个条目</td></tr>
+    <tr><td class="k">MD5</td><td class="mono">adbce9298adb51ff8bf5e0a83568cde1</td></tr>
+    <tr><td class="k">SHA-256</td><td class="mono" style="word-break:break-all">6956b2586a44f5696659ddc25790b28c50063fd0806808efaed9055960eb7459</td></tr>
+    <tr><td class="k">包名 / 应用名</td><td class="mono">com.gradetracker.app</td></tr>
+    <tr><td class="k">显示名称</td><td>成绩追踪（<code>res/values</code> 字符串，副标题「记录每一次进步」）</td></tr>
+    <tr><td class="k">版本</td><td>versionName <b>1.3</b>，versionCode <b>3</b></td></tr>
+    <tr><td class="k">SDK</td><td>minSdk 21（Android 5.0）/ targetSdk 33 / compileSdk 33（Android 13）</td></tr>
+    <tr><td class="k">构建工具</td><td>Android Gradle Plugin <b>7.4.2</b>，appMetadata 1.1；DEX 版本 035</td></tr>
+    <tr><td class="k">ZIP 时间戳</td><td>1981-01-01（AGP 构建规范化，正常现象）</td></tr>
+  </table>
+  <h3>包内构成</h3>
+  <table>
+    <tr><th>内容</th><th>大小</th><th>说明</th></tr>
+    <tr><td class="mono">classes.dex</td><td>6.40 MB</td><td>AndroidX / Kotlin 协程 / Chromium 支撑类，共 5,235 个类（自有类仅 6 个）</td></tr>
+    <tr><td class="mono">classes2.dex</td><td>126 KB</td><td>R 资源索引类</td></tr>
+    <tr><td class="mono">classes3.dex</td><td>3.3 KB</td><td><b>真正的业务代码</b>：MainActivity、MainActivity$1、BuildConfig</td></tr>
+    <tr><td class="mono">assets/index.html</td><td>66 KB</td><td>完整单页应用（2,291 行，原生 JS + CSS，无框架无混淆）</td></tr>
+    <tr><td class="mono">assets/echarts.min.js</td><td>1.01 MB</td><td>Apache ECharts <b>5.6.x</b>（带 Apache 2.0 许可头，非篡改版）</td></tr>
+    <tr><td class="mono">lib/</td><td>—</td><td><b>不存在</b>：没有任何 .so 原生库</td></tr>
+  </table>
+  <div class="okbox"><b>体积对照：</b>3.3 MB 里 3 MB 是「WebView + ECharts」的固定开销，业务逻辑只有 3.3 KB 的字节码和 66 KB 的 HTML——典型的「网页套壳」实现，攻击面极小。</div>
+</div>
+
+<div class="card">
+  <h2>2. 权限与组件（攻击面）</h2>
+  <div class="grid">
+    <div class="kpi"><div class="t">声明的权限</div><div class="v">1 个，且为框架自用</div>
+      <p style="font-size:13px;margin-top:6px" class="mono">com.gradetracker.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION</p>
+      <p style="font-size:13px;color:var(--ink2)">AndroidX 自动生成的动态广播保护权限。<b>没有 INTERNET、没有存储读写、没有定位/相机/通讯录/短信/悬浮窗。</b></p></div>
+    <div class="kpi"><div class="t">四大组件</div><div class="v">1 Activity + 1 Provider</div>
+      <p style="font-size:13px;margin-top:6px">仅 <code>MainActivity</code>（LAUNCHER 入口，exported=true 属正常）+ <code>androidx.startup.InitializationProvider</code>（exported=false）。</p>
+      <p style="font-size:13px;color:var(--ink2)"><b>无 Service、无 BroadCastReceiver、无其他 Activity</b>，没有可被外部拉起的隐蔽入口。</p></div>
+  </div>
+  <table style="margin-top:14px">
+    <tr><th>清单属性</th><th>值</th><th>评价</th></tr>
+    <tr><td class="mono">android:debuggable</td><td><b>true</b></td><td><span class="pill p-amber">工程风险</span> 调试版构建</td></tr>
+    <tr><td class="mono">android:allowBackup</td><td><b>true</b></td><td><span class="pill p-amber">隐私</span> 数据可被备份导出</td></tr>
+    <tr><td class="mono">android:usesCleartextTraffic</td><td>true</td><td><span class="pill p-green">无影响</span> 无网络权限，形同虚设</td></tr>
+    <tr><td class="mono">android:configChanges</td><td>keyboardHidden|orientation|screenSize</td><td><span class="pill p-blue">正常</span> 旋转不重建，保留 WebView 状态</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>3. 签名与安装兼容性</h2>
+  <table>
+    <tr><td class="k">签名方案</td><td>JAR 签名（v1，<code>META-INF/CERT.SF/.RSA</code>）+ <b>APK Signature Scheme v2</b>（块 ID <code>0x7109871a</code>）+ 填充块；<b>无 v3 / v4</b></td></tr>
+    <tr><td class="k">证书主题</td><td class="mono">CN=Android Debug, O=Android, C=US &nbsp;（<b>Android 默认调试证书</b>）</td></tr>
+    <tr><td class="k">算法 / 密钥</td><td>SHA256withRSA · RSA 2048 bit · 序列号 1</td></tr>
+    <tr><td class="k">有效期</td><td>2026-10-02 → 2056-09-24（30 年，调试证书默认时长；说明该包生成于 2026 年 10 月初）</td></tr>
+    <tr><td class="k">安装兼容</td><td>有 v2 签名，满足 Android 11+ 的强制要求；minSdk 21 ⇒ 理论上可装 Android 5.0 及以上</td></tr>
+  </table>
+  <div class="warnbox"><b>为什么这很重要：</b>调试证书是公开可预测的（每台机器的 debug.keystore 各自生成，但无身份背书）。用它签的包<b>无法上架应用商店</b>；日后换成正式签名，用户必须卸载重装（数据会丢）；任何人拿到同一个 keystore 都能签发「看起来是同款升级」的包。</div>
+</div>
+
+<div class="card">
+  <h2>4. 原生层实现：一个极简 WebView 外壳</h2>
+  <p>反汇编 <code>classes3.dex</code> 后，MainActivity 的全部逻辑只有 4 个方法：</p>
+<pre><span class="c">// MainActivity.java（根据字节码还原）</span>
+<span class="m">onCreate</span>(Bundle b) {
+    super.onCreate(b);
+    WebView wv = <span class="m">new</span> WebView(<span class="m">this</span>);
+    setContentView(wv);
+    WebSettings s = wv.getSettings();
+    s.<span class="m">setJavaScriptEnabled</span>(<span class="s">true</span>);
+    s.<span class="m">setDomStorageEnabled</span>(<span class="s">true</span>);        <span class="c">// localStorage 依赖</span>
+    s.<span class="m">setDatabaseEnabled</span>(<span class="s">true</span>);
+    s.<span class="m">setLoadWithOverviewMode</span>(<span class="s">true</span>);
+    s.<span class="m">setUseWideViewPort</span>(<span class="s">true</span>);
+    s.<span class="m">setAllowFileAccess</span>(<span class="s">true</span>);          <span class="c">// 读取 assets</span>
+    s.<span class="m">setAllowContentAccess</span>(<span class="s">true</span>);
+    s.<span class="m">setBuiltInZoomControls</span>(<span class="s">false</span>);
+    s.<span class="m">setDisplayZoomControls</span>(<span class="s">false</span>);
+    s.<span class="m">setCacheMode</span>(-1);                  <span class="c">// LOAD_DEFAULT</span>
+    s.<span class="m">setMixedContentMode</span>(0);            <span class="c">// ALWAYS_ALLOW（冗余的宽松配置）</span>
+    wv.<span class="m">setWebViewClient</span>(<span class="m">new</span> MainActivity.<span class="m">1</span>());
+    wv.<span class="m">setWebChromeClient</span>(<span class="m">new</span> WebChromeClient());   <span class="c">// 空实现</span>
+    wv.<span class="m">loadUrl</span>(<span class="s">"file:///android_asset/index.html"</span>);
+}
+
+<span class="m">onBackPressed</span>() { webView.<span class="m">canGoBack</span>() ? webView.<span class="m">goBack</span>() : super.onBackPressed(); }
+<span class="m">onDestroy</span>()   { webView.<span class="m">destroy</span>(); super.onDestroy(); }
+
+<span class="c">// MainActivity$1 extends WebViewClient</span>
+<span class="m">shouldOverrideUrlLoading</span>(wv, url) { wv.<span class="m">loadUrl</span>(url); <span class="m">return</span> <span class="s">true</span>; }
+</pre>
+  <ul>
+    <li><span class="pill p-green">安全</span> <b>没有 <code>addJavascriptInterface</code></b>——网页与原生之间没有任何桥，JS 无法调用系统能力。</li>
+    <li><span class="pill p-green">安全</span> 页面只从 <code>file:///android_asset/</code> 加载，不加载任何远程地址；即便页面里写死了一个 URL 也打不开（无网络权限）。</li>
+    <li><span class="pill p-amber">缺陷</span> 未设置 <code>DownloadListener</code>，未重写 <code>onShowFileChooser</code> ⇒ 页面里的「导出数据 / 导入数据」在真机上大概率点了没反应（见第 6 节）。</li>
+    <li><span class="pill p-blue">体验</span> 返回键逻辑几乎恒走 <code>super</code>（单页应用没有历史栈），在「成绩详情」页按返回会直接退出应用而不是回上一屏。</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>5. 应用到底做了什么（前端功能与数据模型）</h2>
+  <p>三个视图、零网络请求：</p>
+  <table>
+    <tr><th>视图</th><th>能力</th></tr>
+    <tr><td><b>概览</b></td><td>总分、班级排名、年级排名（对比上一次考试显示「↑进步 N 名 / ↓退步 N 名 / —持平」）；<b>分数趋势折线图</b>（可切换科目/总分，含目标分标线、渐变面积）；<b>科目雷达图</b>（理科组合 / 文科组合 / 全科三套模板），得分率分级</td></tr>
+    <tr><td><b>成绩</b></td><td>考试列表（按日期倒序）、详情弹层、编辑、删除；新增考试弹层含滚轮日期选择器、自定义下拉框</td></tr>
+    <tr><td><b>设置</b></td><td>9 科满分与目标分配置、导出 JSON、导入 JSON、清空全部数据</td></tr>
+  </table>
+  <h3>内置数据模型</h3>
+  <ul>
+    <li><b>科目</b>（9 科，默认满分）：语文/数学/英语 <b>150</b>；物理/化学/生物/政治/历史/地理 <b>100</b>（典型新高考 3+3 组合）</li>
+    <li><b>考试类型</b>：月考、期中、期末、模拟考、其他</li>
+    <li><b>每次考试</b>：名称、日期、类型、总分、班排、年排；每科分数 / 满分 / 班排 / 年排</li>
+    <li><b>存储</b>：<code>localStorage["grade_tracker_data"]</code>，单个 JSON（subjects + exams），<b>明文</b>保存于应用私有目录 <code>/data/data/com.gradetracker.app/app_webview/Local Storage</code></li>
+    <li><b>代码质量</b>：无 minify、无混淆、无 <code>eval</code>、无 <code>fetch/XHR</code>、无 <code>cookie</code>、无 <code>postMessage</code>、无动态脚本注入 —— 全部逻辑可读可审</li>
+  </ul>
+  <div class="okbox"><b>隐私判断：</b>成绩与排名属于未成年人个人信息，但本应用<b>没有任何联网能力</b>，数据不出设备。这是比任何「隐私承诺」都硬的保证——不是「承诺不上传」，而是「上传不了」。</div>
+</div>
+
+<div class="card">
+  <h2>6. 风险与缺陷清单</h2>
+  <table>
+    <tr><th style="width:26%">问题</th><th style="width:12%">级别</th><th>说明</th><th style="width:26%">建议</th></tr>
+    <tr>
+      <td><code>debuggable=true</code></td><td><span class="pill p-amber">中</span></td>
+      <td>调试构建产物。开启 USB 调试的电脑可用 <code>adb shell run-as</code> 读取应用私有数据，WebView 也可通过 <code>chrome://inspect</code> 直接调试页面</td>
+      <td>改用 release 构建（<code>debuggable false</code>）</td>
+    </tr>
+    <tr>
+      <td><code>allowBackup=true</code></td><td><span class="pill p-amber">中</span></td>
+      <td>成绩数据可被 <code>adb backup</code>（Android 11 及以下）或系统云备份整体导出，且内容明文</td>
+      <td>设 <code>android:allowBackup="false"</code>，或配置 backup rules 排除 WebView 目录</td>
+    </tr>
+    <tr>
+      <td>默认调试证书签名</td><td><span class="pill p-amber">中</span></td>
+      <td>无身份背书、不可上架、换签名需卸载重装、无法校验来源</td>
+      <td>生成正式 keystore，启用 v2+v3 签名</td>
+    </tr>
+    <tr>
+      <td>数据明文存储</td><td><span class="pill p-amber">中低</span></td>
+      <td>成绩/排名以明文 JSON 存在本地。设备被 root 或备份被拷走即全部泄露</td>
+      <td>如需对外分发：加密存储或至少关闭备份</td>
+    </tr>
+    <tr>
+      <td>导出 / 导入大概率失效</td><td><span class="pill p-amber">功能</span></td>
+      <td>导出用 <code>Blob + &lt;a download&gt;</code>，WebView 未注册 <code>DownloadListener</code> 时不会触发下载；导入依赖 <code>&lt;input type=file&gt;</code>，WebChromeClient 为空实现、未重写 <code>onShowFileChooser</code>，文件选择器通常不会弹出</td>
+      <td>补 DownloadListener + onShowFileChooser，或改为系统分享 / SAF</td>
+    </tr>
+    <tr>
+      <td>宽松的 WebView 配置</td><td><span class="pill p-green">低</span></td>
+      <td><code>setMixedContentMode(ALWAYS_ALLOW)</code>、<code>allowFileAccess/ContentAccess(true)</code>。因无网络权限且页面全部本地，实际不可被利用，属冗余配置</td>
+      <td>收紧为 <code>NEVER_ALLOW</code>，按需开 fileAccess</td>
+    </tr>
+    <tr>
+      <td>innerHTML 拼接用户输入</td><td><span class="pill p-green">低</span></td>
+      <td>考试名称等输入直接进模板字符串再 <code>innerHTML</code>。手动输入只造成「自己 XSS 自己」；但若导入他人伪造的 JSON（考试名里带 <code>&lt;img onerror=…&gt;</code>），脚本会在 <code>file://</code> 上下文执行——由于没有 JS 桥，最坏结果是页面被改坏，拿不到系统权限</td>
+      <td>导入时校验/转义字段，渲染改用 <code>textContent</code></td>
+    </tr>
+    <tr>
+      <td>返回键直接退出</td><td><span class="pill p-blue">体验</span></td>
+      <td>单页应用无路由栈，<code>canGoBack()</code> 恒为 false，在子页面按返回会退出应用</td>
+      <td>用 JS 桥或 <code>OnBackPressedDispatcher</code> 让页面先响应返回</td>
+    </tr>
+    <tr>
+      <td>无隐私政策 / 关于页</td><td><span class="pill p-blue">合规</span></td>
+      <td>设置页只有科目配置和数据管理</td>
+      <td>若要分发，补齐隐私说明与版本信息</td>
+    </tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>7. 建议</h2>
+  <h3>如果你打算自己用</h3>
+  <ul>
+    <li>可以装、可以放心用：<b>静态层面没有任何恶意或后门特征</b>，也没有联网能力。</li>
+    <li><b>不要把它当作唯一的成绩档案</b>：导出功能很可能点了没反应，一旦卸载或清除数据，记录就没了。建议同时把原始成绩留一份在自己的表格/备忘录里。</li>
+    <li>手机保持「USB 调试」关闭状态，可抵消 <code>debuggable=true</code> 的绝大部分影响。</li>
+    <li>来源不明的第三方渠道转发的同款安装包要重新校验 SHA-256（本报告已给出），因为调试证书无法证明来源。</li>
+  </ul>
+  <h3>如果你是开发者（想正式发布）</h3>
+  <ul>
+    <li>release 签名 + 关闭 <code>debuggable</code> + 关闭 <code>allowBackup</code>，签名升级到 v2/v3。</li>
+    <li>补齐 WebView 的下载与文件选择回调，让「导出/导入」真正可用——这是这类离线工具唯一的数据保险。</li>
+    <li>导入 JSON 前做字段白名单校验，渲染时对用户输入转义。</li>
+    <li>把 <code>setMixedContentMode</code> 改为 <code>MIXED_CONTENT_NEVER_ALLOW</code>，<code>allowFileAccess</code> 仅保留必要项。</li>
+    <li>上架前补隐私政策页；应用名称含「成绩」且面向学生，注意教育类应用的内容合规要求。</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>8. 分析范围与局限</h2>
+  <ul>
+    <li><b>已做</b>：二进制清单解析、资源索引与字符串提取、DEX 全量类/方法统计与自有类反汇编、签名块与证书解析、assets 全量代码审计（HTML/JS 逐段阅读 + 关键字扫描）、危险 API 与第三方 SDK 扫描。</li>
+    <li><b>未做</b>：动态沙箱运行、真机行为验证。因此「导出/导入失效」「返回键退出」是基于代码与 WebView 默认行为的推断，属<b>高置信度但未经实机确认</b>的结论。</li>
+    <li>未发现加壳、DEX 加密、字符串混淆、反射加载（<code>DexClassLoader</code>）、<code>Runtime.exec</code>、静默安装等常见恶意手法。</li>
+  </ul>
+</div>
+
+<footer>
+  报告生成时间：2026-10-25 · 基于工作目录内的静态分析脚本（AXML / DEX 解析器自建）<br>
+  校验命令：<code>sha256sum GradeTracker_v1.3.apk</code>
+</footer>
+
+</div>
+</body>
+</html>
