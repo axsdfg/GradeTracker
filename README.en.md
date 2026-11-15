@@ -8,7 +8,7 @@
 
 No sign-up · No network · No telemetry · Your data stays on your own phone
 
-<sub>[简体中文](README.md) · **English**</sub>
+<sub>[简体中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Русский](README.ru.md)</sub>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2c5282.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/axsdfg/GradeTracker?label=release&color=d97706)](https://github.com/axsdfg/GradeTracker/releases/latest)
@@ -276,6 +276,7 @@ GradeTracker/
 │   ├── ANDROID-INTEGRATION.md     # manifest, permissions, network config, JS bridge
 │   ├── PRIVACY.md                 # data flow and threat model
 │   ├── ROADMAP.md                 # future direction
+│   ├── TRANSLATIONS.md            # translation status, glossary, how to add a language
 │   └── apk-analysis-report.html   # static analysis of one real APK (sample)
 ├── assets/logo.svg
 └── .github/workflows/ci.yml
@@ -369,7 +370,7 @@ See [docs/ROADMAP.md](docs/ROADMAP.md). The three most valuable items near-term:
 
 Issues and PRs are welcome — especially real-device compatibility reports, provincial grade-conversion rules, and adaptations to other score-segment data formats. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first (Chinese).
 
-If you would like to translate this README or any document under `docs/`, open an issue first so we can agree on file naming (`README.<lang>.md`) and keep the language switcher in sync.
+If you would like to add a language, see [docs/TRANSLATIONS.md](docs/TRANSLATIONS.md): new files follow the `README.<lang>.md` naming, must be added to the language switcher of every README, and should keep the section structure aligned with the Chinese baseline.
 
 ## License
 
@@ -379,4 +380,4 @@ ECharts is published by the Apache Software Foundation under Apache-2.0 and is n
 
 ---
 
-<sub>[简体中文](README.md) · **English**</sub>
+<sub>[简体中文](README.md) · **English** · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Русский](README.ru.md)</sub>

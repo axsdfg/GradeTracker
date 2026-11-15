@@ -8,7 +8,7 @@
 
 不用注册 · 不联网 · 无埋点 · 数据只存在你自己的手机里
 
-<sub>**简体中文** · [English](README.en.md)</sub>
+<sub>**简体中文** · [English](README.en.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Русский](README.ru.md)</sub>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2c5282.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/axsdfg/GradeTracker?label=release&color=d97706)](https://github.com/axsdfg/GradeTracker/releases/latest)
@@ -274,6 +274,7 @@ GradeTracker/
 │   ├── ANDROID-INTEGRATION.md     # 清单、权限、网络配置、JS 桥
 │   ├── PRIVACY.md                 # 数据流与威胁模型
 │   ├── ROADMAP.md                 # 未来方向
+│   ├── TRANSLATIONS.md            # 翻译状态、术语对照与新增语言的方法
 │   └── apk-analysis-report.html   # 一次真实 APK 的静态分析报告（示例）
 ├── assets/logo.svg
 └── .github/workflows/ci.yml
@@ -366,6 +367,8 @@ CI（`.github/workflows/ci.yml`）在每次 push 时跑上面两条命令，外�
 ## 参与贡献
 
 欢迎 issue 和 PR，尤其是：真机兼容性反馈、各省赋分规则、一分一段数据格式适配。请先读 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+文档共提供六种语言（中 / 英 / 日 / 韩 / 西 / 俄）。翻译状态、术语对照和新增语言的方法见 [docs/TRANSLATIONS.md](docs/TRANSLATIONS.md)。
 
 ## 许可证
 
