@@ -102,6 +102,7 @@ Status legend: ✅ implemented ｜ ⚠️ has a fallback path ｜ ❌ requires n
 | Scoring modes | ✅ | Raw / weighted (Σ score × weight) / converted (score rate mapped onto an adjustable range) |
 | Exam countdown | ✅ | Countdown on the home screen plus 3/7/14/30-day reminder strips (system notifications need the native bridge; otherwise in-page) |
 | Dark mode | ✅ | Follow system / light / dark, with chart colors switching in sync |
+| Interface language | ✅ | 简体中文 / English / 日本語 / 한국어 / Español / Русский, switchable in Settings or follow the system. Charts, the shareable report card and toasts are localized too |
 | Data export | ✅ | Full JSON backup plus CSV score details (with BOM, so Excel opens it directly) |
 | Table import | ✅ | Paste from Excel/WPS (TSV) or CSV; same date and same name merge into one exam automatically |
 | Automatic backup | ✅ | Three on-device snapshots per day (ring buffer); five more files on disk when the native bridge is present |

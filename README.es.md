@@ -104,6 +104,7 @@ Leyenda: ✅ implementado ｜ ⚠️ tiene alternativa ｜ ❌ requiere trabajo 
 | Modos de puntuación | ✅ | Bruto / ponderado (Σ nota × peso) / convertido (tasa de acierto mapeada a un rango ajustable) |
 | Cuenta atrás de exámenes | ✅ | Cuenta atrás en la pantalla de inicio y franjas de aviso a 3/7/14/30 días (las notificaciones del sistema necesitan el puente nativo; si no, aviso en la página) |
 | Modo oscuro | ✅ | Seguir al sistema / claro / oscuro, con los colores de los gráficos sincronizados |
+| Idioma de la interfaz | ✅ | 简体中文 / English / 日本語 / 한국어 / Español / Русский, seleccionable en Ajustes o siguiendo al sistema. Gráficos, tarjeta de notas y avisos también se traducen |
 | Exportación de datos | ✅ | Copia completa en JSON y detalle de notas en CSV (con BOM, se abre directamente en Excel) |
 | Importación de tablas | ✅ | Pegar desde Excel/WPS (TSV) o CSV; misma fecha y mismo nombre se fusionan en un solo examen |
 | Copia automática | ✅ | Tres instantáneas diarias en el dispositivo (búfer circular), más cinco archivos si existe el puente nativo |
