@@ -10,6 +10,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2c5282.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/axsdfg/GradeTracker?label=release&color=d97706)](https://github.com/axsdfg/GradeTracker/releases/latest)
+[![CI](https://github.com/axsdfg/GradeTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/axsdfg/GradeTracker/actions/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/Android-7.0%2B-3ddc84.svg)](#系统要求)
 [![Network](https://img.shields.io/badge/network-none%20(offline--first)-059669.svg)](docs/PRIVACY.md)
 [![Tests](https://img.shields.io/badge/regression-34%20steps%20passing-059669.svg)](test/)
