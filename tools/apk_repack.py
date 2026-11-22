@@ -3,9 +3,13 @@
 APK 外科手术式重打包
   1) 用新版本替换 assets/index.html
   2) 字节级补丁 AndroidManifest.xml（debuggable/allowBackup/usesCleartextTraffic=false，
-     versionCode 3->4，versionName 1.3->2.0）
+     versionCode 递增，versionName 等长替换）
   3) 对 method=0（stored）条目重新做 4 字节对齐（zipalign 等价），其余条目字节级原样保留
+
 用法: python apk_repack.py <src.apk> <new_index.html> <out.apk>
+        [--no-net]                 不加 INTERNET 权限
+        [--version-code N]         versionCode，缺省为当前值 +1
+        [--version-name X.Y]       versionName，必须与原值等长（如 2.1 -> 2.2）
 """
 import struct, sys, zlib, zipfile
 
@@ -269,7 +273,24 @@ def add_uses_permission(data, perm='android.permission.INTERNET'):
     return bytes(out), True
 
 
-def patch_manifest(src, add_net=True):
+def read_version(ax):
+    """读取当前清单的 (versionCode, versionName)"""
+    code = None
+    name = None
+    for e in ax.elems:
+        if e['tag'] != 'manifest':
+            continue
+        for a in e['attrs']:
+            if a['name'] == 'versionCode':
+                code = a['data']
+            elif a['name'] == 'versionName':
+                name = ax.strings[a['data']] if a['dtype'] == 0x03 else str(a['data'])
+    return code, name
+
+
+def patch_manifest(src, add_net=True, version_code=None, version_name=None):
+    """改清单。version_code 缺省为「当前值 + 1」（覆盖安装必须递增）；
+    version_name 缺省保持不变，给了就必须与原值等长，否则字符串池要重建，脚本会跳过。"""
     z = zipfile.ZipFile(src)
     man = z.read('AndroidManifest.xml')
     ax = Axml(man)
@@ -277,13 +298,25 @@ def patch_manifest(src, add_net=True):
     for attr in ('debuggable', 'allowBackup', 'usesCleartextTraffic'):
         if ax.set_bool('application', attr, False):
             log.append('%s=false' % attr)
-    if ax.set_int('manifest', 'versionCode', 4):
-        log.append('versionCode=4')
-    try:
-        if ax.replace_string('1.3', '2.0'):
-            log.append('versionName=2.0')
-    except Exception as ex:
-        log.append('versionName 跳过: %s' % ex)
+
+    old_code, old_name = read_version(ax)
+    want_code = old_code + 1 if version_code is None else version_code
+    if old_code is not None and want_code <= old_code:
+        raise SystemExit('versionCode 必须递增：当前 %s，要求 %s' % (old_code, want_code))
+    if ax.set_int('manifest', 'versionCode', want_code):
+        log.append('versionCode=%s->%d' % (old_code, want_code))
+
+    if version_name is not None and version_name != old_name:
+        try:
+            if ax.replace_string(old_name, version_name):
+                log.append('versionName=%s->%s' % (old_name, version_name))
+            else:
+                log.append('versionName 未命中，保持 %s' % old_name)
+        except Exception as ex:
+            log.append('versionName 跳过（长度不同，需重建字符串池）: %s' % ex)
+    else:
+        log.append('versionName 保持 %s' % old_name)
+
     out = bytes(ax.d)
     if add_net:
         out, added = add_uses_permission(out)
@@ -292,10 +325,28 @@ def patch_manifest(src, add_net=True):
 
 
 if __name__ == '__main__':
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    add_net = '--no-net' not in sys.argv
-    src, html, out = args[0], args[1], args[2]
-    man, log = patch_manifest(src, add_net=add_net)
+    argv = sys.argv[1:]
+    add_net = '--no-net' not in argv
+
+    def take(flag, cast=str):
+        if flag not in argv:
+            return None
+        i = argv.index(flag)
+        if i + 1 >= len(argv):
+            raise SystemExit('%s 缺少参数值' % flag)
+        val = argv[i + 1]
+        del argv[i:i + 2]
+        return cast(val)
+
+    v_code = take('--version-code', int)
+    v_name = take('--version-name')
+
+    args = [a for a in argv if not a.startswith('--')]
+    if len(args) != 3:
+        raise SystemExit('用法: python apk_repack.py <src.apk> <new_index.html> <out.apk> '
+                         '[--no-net] [--version-code N] [--version-name X.Y]')
+    src, html, out = args
+    man, log = patch_manifest(src, add_net=add_net, version_code=v_code, version_name=v_name)
     print('清单补丁:', ', '.join(log))
     n, size = build(src, {'assets/index.html': open(html, 'rb').read(),
                           'AndroidManifest.xml': man}, out)

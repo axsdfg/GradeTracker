@@ -25,11 +25,12 @@
 ## 2. 三步流程
 
 ```bash
-# 1) 换页 + 补丁清单，输出未签名包
-python tools/apk_repack.py 原包.apk app/index.html unsigned.apk
+# 1) 换页 + 补丁清单，输出未签名包（版本号可显式指定）
+python tools/apk_repack.py 原包.apk app/index.html unsigned.apk \
+       --version-code 6 --version-name 2.2
 
-# 2) 重新签名（需要 JDK 17 + apksig.jar）
-java -cp apksig.jar tools/SignApk.java sign my.jks <storepass> <alias> unsigned.apk signed.apk 21
+# 2) 重新签名（需要 JDK 17 + apksig.jar；keystore 必须是 PKCS12）
+java -cp apksig.jar tools/SignApk.java sign release.p12 <pass> <alias> unsigned.apk signed.apk 21
 
 # 3) 校验
 java -cp apksig.jar tools/SignApk.java verify signed.apk
@@ -56,10 +57,10 @@ mv apksig-8.6.1.jar apksig.jar
 | `android:debuggable` | `false` | 否则 `adb shell run-as <包名>` 可直读私有数据，WebView 还能被 `chrome://inspect` 调试 |
 | `android:allowBackup` | `false` | 否则 `adb backup` 可把整个 localStorage 明文导走 |
 | `android:usesCleartextTraffic` | `false` | 只允许 HTTPS |
-| `versionCode` | +1 | 覆盖安装的必要条件 |
-| `versionName` | 从旧值改为新值（**等长**） | 只做同长度替换，见下文 |
+| `versionCode` | 缺省 +1，可用 `--version-code` 指定 | 覆盖安装的必要条件 |
+| `versionName` | 用 `--version-name` 指定（**等长**） | 只做同长度替换，见下文 |
 
-`versionName` 约束：AXML 字符串池是"偏移表 + 数据区"，改变单个字符串长度就要重算所有偏移。脚本选择**只在长度相同时**原位替换（`1.3` → `2.0`），长度不同就跳过并记日志，不冒险重建池。
+`versionName` 约束：AXML 字符串池是"偏移表 + 数据区"，改变单个字符串长度就要重算所有偏移。脚本选择**只在长度相同时**原位替换（`2.1` → `2.2`），长度不同就跳过并记日志，不冒险重建池。不传 `--version-name` 时保持原值。
 
 ---
 
@@ -116,11 +117,6 @@ absolute = len(输出缓冲) + 30 (LFH 固定长度) + nlen (文件名长度) + 
 
 所以：**第一次发布就要用正式密钥，并永久保存**。丢了就再也无法升级已发布的包。
 
-```bash
-keytool -genkeypair -v -keystore gradetracker.jks -alias gradetracker \
-        -keyalg RSA -keysize 4096 -validity 10000
-```
-
 `SignApk.java` 同时签 v1（JAR）+ v2（APK Signing Block）+ v3（密钥轮换支持）。校验输出应类似：
 
 ```
@@ -128,6 +124,85 @@ verified = true
 v1 = true   v2 = true   v3 = true
 cert subject = CN=YourName, O=...
 ```
+
+---
+
+## 6.1 换成你自己的正式密钥重建
+
+### 三个容易踩的坑（均已实测）
+
+| 限制 | 硬限制？ | 说明 |
+|---|---|---|
+| **库口令必须等于密钥口令** | 是 | 代码用同一个 `storePass` 去取私钥（`ks.getKey(alias, storePass)`）。两者不同会抛 `UnrecoverableKeyException: Cannot recover key` |
+| 口令至少 6 位 | 是（`keytool` 层） | 少于 6 位 `keytool` 直接拒绝生成，且不报错到明显处，容易误判为"库没生成" |
+| 密钥库格式 | **否** | PKCS12 与 JKS 实际都能读：JDK 默认 `keystore.type.compat=true`，`KeyStore.getInstance("PKCS12")` 也能打开 JKS。但仍建议 PKCS12——JKS 是专有格式，`keytool` 每次都会警告要你迁移 |
+
+从 JDK 9 起 `keytool` 默认生成 PKCS12，照下面的命令写就不用管格式问题。
+
+### 第 1 步：生成密钥库
+
+```bash
+# 只做一次。生成后立刻备份到两处以上（U 盘 + 密码管理器）
+keytool -genkeypair -v \
+        -keystore gradetracker-release.p12 \
+        -storetype PKCS12 \
+        -alias gradetracker \
+        -keyalg RSA -keysize 4096 -validity 10000 \
+        -dname "CN=你的名字, O=你的组织, C=CN"
+```
+
+- `-validity 10000` 约 27 年。Google Play 要求至少到 2033 年，自己分发也建议够长。
+- 两个口令（库口令、密钥口令）**填同一个**，见上表。
+- 口令别写进任何脚本或 `.gitignore` 之外的文本文件；Shell 里用环境变量传。
+
+### 第 2 步：重打包并递增版本号
+
+```bash
+python tools/apk_repack.py 原包.apk app/index.html unsigned.apk \
+       --version-code 6 --version-name 2.2
+```
+
+- `--version-code` 缺省为「当前值 + 1」，显式指定时必须**大于**当前值，否则脚本直接退出。
+- `--version-name` 必须与原值**等长**（`2.1` → `2.2` 可以，`2.1` → `2.10` 不行）。长度不同脚本会跳过并记日志，因为 AXML 字符串池要重建，风险大于收益。
+- 从旧包升级时以**最近一次发布的包**为 `原包.apk`，而不是最初那个 1.3，这样 `classes.dex`、资源、图标都保持原样。
+
+### 第 3 步：签名
+
+```bash
+export KS_PASS='你的口令'
+java -cp apksig.jar tools/SignApk.java sign \
+     gradetracker-release.p12 "$KS_PASS" gradetracker \
+     unsigned.apk GradeTracker_v2.2.0.apk 21
+```
+
+最后一个参数是最低 SDK（21），影响 v1 签名的摘要算法选择，对本项目保持 21 即可。
+
+### 第 4 步：核对证书指纹
+
+```bash
+keytool -printcert -jarfile GradeTracker_v2.2.0.apk | grep SHA256
+```
+
+输出必须是你自己证书的指纹，而不再是 `52:81:39:28:…:B8`（那是调试证书 `CN=Android Debug`）。
+
+### 从调试签名迁移到正式签名
+
+这是一次性的断层，**不能覆盖安装**。老用户（包括你自己）按这个顺序操作，数据不会丢：
+
+1. 打开应用 → 设置 → 数据 → **导出 JSON**，把文件存到手机存储或发给自己；
+2. 卸载旧版（调试签名那个）；
+3. 安装正式签名的新包；
+4. 设置 → 数据 → **导入 JSON**，选刚才那个文件。
+
+导出的格式是完整快照（学期、考试、科目配置、错题本全在内），导入后和原来一致。CSV 只含成绩表，不含错题和设置，迁移请用 JSON。
+
+### 一个必须记住的事实
+
+正式密钥丢了，**这个应用就再也无法升级**——已装的用户只能卸载重装，数据同样要手动导出导入。所以第 1 步生成的 `.p12` 文件：
+
+- 备份至少两份，其中一份离线（U 盘）；
+- 口令单独记在密码管理器里，不要和文件放一起；
+- **永远不要**提交到仓库，`.gitignore` 已包含 `*.p12` / `*.jks` / `*.keystore`。
 
 ---
 

@@ -2,6 +2,14 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 改进
+
+- `tools/apk_repack.py` 新增 `--version-code` / `--version-name`：`versionCode` 缺省按「当前 +1」递增，不再写死为 4；`versionName` 不传时保持原值。版本号未递增会直接退出，避免打出装不上的包
+- `docs/PACKAGING.md` 新增 §6.1「换成你自己的正式密钥重建」：PKCS12 与单口令这两个工具层限制、四步命令、从调试签名迁移时「导出 JSON → 卸载 → 装新版 → 导入」的完整路径
+- `docs/ANDROID-INTEGRATION.md` 的 Gradle 签名示例改用 `.p12` 并显式 `storeType "PKCS12"`
+
 ## [2.1.0] - 2026-11-15
 
 ### 新增

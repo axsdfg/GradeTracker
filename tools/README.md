@@ -25,7 +25,9 @@ python tools/disasm.py 目标.apk com.example.MainActivity   # 反汇编某个�
 ## 2. 重打包
 
 ```bash
-python tools/apk_repack.py 原包.apk app/index.html unsigned.apk
+# 版本号缺省为「当前 +1」，也可显式指定
+python tools/apk_repack.py 原包.apk app/index.html unsigned.apk \
+       --version-code 6 --version-name 2.2
 ```
 
 参数：
@@ -36,11 +38,13 @@ python tools/apk_repack.py 原包.apk app/index.html unsigned.apk
 | `<新页面.html>` | 要放进去的前端 |
 | `<输出.apk>` | 未签名输出 |
 | `--no-net` | **不**添加 `INTERNET` 权限（回到零权限） |
+| `--version-code N` | 指定 `versionCode`；缺省为当前值 +1，小于等于当前值会直接退出 |
+| `--version-name X.Y` | 指定 `versionName`；必须与原值等长，否则跳过并记日志 |
 
 会做的事：
 
 1. 替换 `assets/index.html`；
-2. 补丁清单：`debuggable=false`、`allowBackup=false`、`usesCleartextTraffic=false`、`versionCode +1`、`versionName` 等长替换；
+2. 补丁清单：`debuggable=false`、`allowBackup=false`、`usesCleartextTraffic=false`、`versionCode` 递增（缺省 +1，`--version-code` 可指定）、`versionName` 等长替换（`--version-name`，缺省不动）；
 3. 默认插入 `<uses-permission android:name="android.permission.INTERNET"/>`（`--no-net` 跳过）；
 4. stored 条目重做 4 字节对齐；
 5. 剔除旧的 v1 签名文件（`META-INF/*.SF|*.RSA|*.MF`）。

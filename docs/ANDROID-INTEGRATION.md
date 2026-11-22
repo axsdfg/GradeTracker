@@ -97,15 +97,19 @@ webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
 调试密钥（`CN=Android Debug`）签出来的包：无身份背书、不能上架、换正式签名后**无法覆盖安装**（用户必须先卸载，数据全丢）。
 
 ```bash
-keytool -genkeypair -v -keystore gradetracker.jks -alias gradetracker \
-        -keyalg RSA -keysize 4096 -validity 10000
+keytool -genkeypair -v -keystore gradetracker-release.p12 -storetype PKCS12 \
+        -alias gradetracker -keyalg RSA -keysize 4096 -validity 10000 \
+        -dname "CN=你的名字, O=你的组织, C=CN"
 ```
+
+用 PKCS12（JDK 9 起的默认格式）。仓库里的手工签名脚本 `tools/SignApk.java` 用同一个口令取私钥，所以**库口令与密钥口令必须相同**；Gradle 允许两者不同，混用时要留意这一点。格式本身不是限制——JDK 默认 `keystore.type.compat=true`，JKS 也能读，但 `keytool` 会一直警告建议迁移，不如一步到位。
 
 ```gradle
 android {
     signingConfigs {
         release {
-            storeFile file("../keystore/gradetracker.jks")
+            storeFile file("../keystore/gradetracker-release.p12")
+            storeType "PKCS12"
             storePassword System.getenv("GT_STORE_PASS")
             keyAlias "gradetracker"
             keyPassword System.getenv("GT_KEY_PASS")
@@ -121,13 +125,15 @@ android {
 }
 ```
 
-口令走环境变量，**不要写进 `build.gradle`**，更不要提交 keystore。
+口令走环境变量，**不要写进 `build.gradle`**，更不要提交 keystore。注意：Gradle 允许库口令与密钥口令不同，而仓库里的手工脚本 `SignApk.java` 用同一个口令，两者混用时要么统一下口令，要么别混用。
 
 ```bash
 ./gradlew clean assembleRelease
 apksigner verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
 # 期望：Verified using v2 scheme: true / v3 scheme: true / CN=你的名字
 ```
+
+不用 Gradle、直接在现有包体上换页重签的完整流程（含版本号递增与迁移注意事项）见 [PACKAGING.md §6.1](PACKAGING.md#61-换成你自己的正式密钥重建)。
 
 ---
 
